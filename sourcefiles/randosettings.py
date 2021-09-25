@@ -1,19 +1,35 @@
 from enum import Flag, IntEnum, auto
+from dataclasses import dataclass
 
 
-class Difficulty(IntEnum):
+class StrIntEnum(IntEnum):
+
+    def __str__(self):
+        x = self.__repr__().split('.')[1].split(':')[0].lower().capitalize()
+        x = x.replace('_', ' ')
+        return x
+
+    @classmethod
+    def str_dict(cls) -> dict:
+        return dict((x, str(x)) for x in list(cls))
+
+    @classmethod
+    def inv_str_dict(cls) -> dict:
+        return dict((str(x), x) for x in list(cls))
+
+class Difficulty(StrIntEnum):
     EASY = 0
     NORMAL = 1
     HARD = 2
 
 
-class TechOrder(IntEnum):
+class TechOrder(StrIntEnum):
     NORMAL = 0
     FULL_RANDOM = 1
     BALANCED_RANDOM = 2
 
 
-class ShopPrices(IntEnum):
+class ShopPrices(StrIntEnum):
     NORMAL = 0
     MOSTLY_RANDOM = 1
     FULLY_RANDOM = 2
@@ -30,10 +46,26 @@ class GameFlags(Flag):
     UNLOCKED_MAGIC = auto()
     QUIET_MODE = auto()
     CHRONOSANITY = auto()
-    TAB_TREASURES = auto()  # Maybe needs to be part of treasure flag?
+    TAB_TREASURES = auto()  # Maybe needs to be part of treasure page?
     BOSS_RANDO = auto()
     DUPLICATE_CHARS = auto()
     DUPLICATE_TECHS = auto()
+
+
+class TabRandoScheme(StrIntEnum):
+    UNIFORM = 0
+    BINOMIAL = 1
+
+@dataclass
+class TabSettings:
+    scheme: TabRandoScheme = TabRandoScheme.UNIFORM
+    binom_success: float = 0.5  # Only used by binom if set
+    power_min: int = 2
+    power_max: int = 4
+    magic_min: int = 1
+    magic_max: int = 3
+    speed_min: int = 1
+    speed_max: int = 1
 
 
 class Settings:
@@ -48,6 +80,8 @@ class Settings:
 
         self.gameflags = GameFlags.FIX_GLITCH
         self.char_choices = [[i] for i in range(7)]
+
+        self.tab_settings = TabSettings()
         self.seed = ''
 
     def get_race_presets():
@@ -71,7 +105,7 @@ class Settings:
         ret = Settings()
 
         ret.item_difficulty = Difficulty.EASY
-        ret.enemy_difficulty = Difficulty.EASY
+        ret.enemy_difficulty = Difficulty.NORMAL
 
         ret.shopprices = ShopPrices.NORMAL
         ret.techorder = TechOrder.FULL_RANDOM
