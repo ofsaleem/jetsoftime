@@ -76,7 +76,7 @@ class TabSettings:
 class ROSettings:
     loc_list: list[int] = field(default_factory=list)
     boss_list: list[BossID] = field(default_factory=list)
-    preserve_spots: bool = False
+    preserve_parts: bool = False
 
 
 class Settings:
@@ -166,6 +166,7 @@ class Settings:
         ret.gameflags = (GameFlags.BOSS_SCALE |
                          GameFlags.LOCKED_CHARS)
 
+        # All bosses, all spots
         ret.ro_settings = ROSettings(
             LocID.get_boss_locations(),
             list(BossID),

@@ -2,6 +2,7 @@
 import os
 import pathlib
 import pickle
+from time import sleep
 import threading
 import tkinter as tk
 from tkinter import ttk
@@ -113,6 +114,9 @@ class RandoGUI:
                              for j in range(7)]
 
         self.duplicate_duals = tk.IntVar(value=0)
+
+        # ro settings
+        self.preserve_part_count = tk.IntVar(value=0)
 
         # generation variables
         self.seed = tk.StringVar()
@@ -249,8 +253,6 @@ class RandoGUI:
         boss_indices = [self.bosses.index(x)
                         for x in ro_settings.boss_list]
 
-        print(boss_indices)
-
         for index in boss_indices:
             self.boss_listbox.select_set(index)
 
@@ -259,6 +261,8 @@ class RandoGUI:
 
         for index in boss_loc_indices:
             self.boss_location_listbox.select_set(index)
+
+        self.preserve_part_count.set(int(ro_settings.preserve_parts))
 
         self.verify_settings()
 
@@ -277,10 +281,17 @@ class RandoGUI:
         else:
             self.boss_scaling_checkbox.config(state=tk.NORMAL)
 
+        # Check DC Page
         if self.flag_dict[GameFlags.DUPLICATE_CHARS].get() == 1:
             self.notebook.tab(self.dc_page, state=tk.NORMAL)
         else:
             self.notebook.tab(self.dc_page, state=tk.DISABLED)
+
+        # Check RO Page
+        if self.flag_dict[GameFlags.BOSS_RANDO].get() == 1:
+            self.notebook.tab(self.ro_page, state=tk.NORMAL)
+        else:
+            self.notebook.tab(self.ro_page, state=tk.DISABLED)
 
         # check the tab rando slider
         if self.tab_rando_scheme.get() == \
@@ -345,7 +356,7 @@ class RandoGUI:
 
         return frame
 
-    # should only be called when the dc settings window is up
+    # Called by self.settings_valid
     def dc_settings_valid(self) -> bool:
         for i in range(7):
             is_set = False
@@ -889,8 +900,8 @@ class RandoGUI:
 
         return frame
 
-    def randomize(self):
-        # Check for bad input.  For now it's only from dc settings page
+    def settings_valid(self):
+        # Check for bad input from DC page
         if self.flag_dict[GameFlags.DUPLICATE_CHARS].get() == 1 \
            and not self.dc_settings_valid():
             messagebox.showerror(
@@ -898,12 +909,133 @@ class RandoGUI:
                 'Each character must have at least one choice selected.'
             )
             self.notebook.select(self.dc_page)
+            return
+
+        # Check for bad input from RO page
+
+        if self.flag_dict[GameFlags.BOSS_RANDO].get() == 1:
+            loc_selection_ind = self.boss_location_listbox.curselection()
+            boss_selection_ind = self.boss_listbox.curselection()
+
+            if self.preserve_part_count.get() == 1:
+                # Legacy Boss Rando is on.  Que many annoying checks.
+                # Some of this can be cleaned up, but I'm hoping the option
+                # goes away in favor of 'Safe Mode' flags.
+
+                # Check one spots
+                one_part_bosses = BossID.get_one_part_bosses()
+                one_part_boss_ind = [
+                    i for i in boss_selection_ind
+                    if self.bosses[i] in one_part_bosses
+                ]
+                one_part_loc_ind = [
+                    i for i in loc_selection_ind
+                    if boss_loc_dict[self.boss_locations[i]] in one_part_bosses
+                ]
+
+                if len(one_part_boss_ind) < len(one_part_loc_ind):
+                    messagebox.showerror(
+                        'RO Settings Error',
+                        f"Legacy boss randomization set with "
+                        f"{len(one_part_loc_ind)} one part bosses set "
+                        f"but only {len(one_part_boss_ind)} one part bosses "
+                        "set.\n"
+                        "Try hitting the \"Loc to Boss\" button."
+                    )
+                    self.notebook.select(self.ro_page)
+                    return False
+
+                # Check two spots -- some code duplication here is ugly
+                two_part_bosses = BossID.get_two_part_bosses()
+                two_part_boss_ind = [
+                    i for i in boss_selection_ind
+                    if self.bosses[i] in two_part_bosses
+                ]
+                two_part_loc_ind = [
+                    i for i in loc_selection_ind
+                    if boss_loc_dict[self.boss_locations[i]] in two_part_bosses
+                ]
+
+                if len(two_part_boss_ind) < len(two_part_loc_ind):
+                    messagebox.showerror(
+                        'RO Settings Error',
+                        f"Legacy boss randomization set with "
+                        f"{len(two_part_loc_ind)} two part bosses set "
+                        f"but only {len(two_part_boss_ind)} two part bosses "
+                        "set.\n"
+                        "Try hitting the \"Loc to Boss\" button."
+                    )
+                    self.notebook.select(self.ro_page)
+                    return False
+
+                one_two_part_bosses = one_part_bosses + two_part_bosses
+
+                multi_part_boss_ind = [
+                    i for i in boss_selection_ind
+                    if self.bosses[i] not in one_two_part_bosses
+                ]
+
+                multi_part_loc_ind = [
+                    i for i in loc_selection_ind
+                    if boss_loc_dict[self.boss_locations[i]]
+                    not in one_two_part_bosses
+                ]
+
+                err_msg = str()
+                if len(multi_part_boss_ind) > 0:
+                    err_msg += (
+                        'The following bosses are not allowed with Legacy '
+                        'boss randomization:\n'
+                    )
+
+                    for i in multi_part_boss_ind:
+                        err_msg += f"    {str(self.bosses[i])}\n"
+
+                if len(multi_part_loc_ind) > 0:
+                    err_msg += (
+                        '\nThe following boss locations are not allowed with '
+                        'Legacy boss randomization:\n'
+                    )
+
+                    for i in multi_part_loc_ind:
+                        err_msg += f"    {str(self.boss_locations[i])}\n"
+
+                if len(err_msg) > 0:
+                    messagebox.showerror(
+                        'RO Settings Error',
+                        err_msg
+                    )
+                    self.notebook.select(self.ro_page)
+                    return False
+            else:
+                # Legacy Boss Rando is not on.
+                if len(boss_selection_ind) < len(loc_selection_ind):
+                    messagebox.showerror(
+                        'RO Settings Error',
+                        f"Not enough bosses ({len(boss_selection_ind)}) "
+                        f"to fill the locations ({len(loc_selection_ind)}.  "
+                        "Please use the \"Loc to Boss\" button to fix this."
+                    )
+                self.notebook.select(self.ro_page)
+                return False
+        # End if boss rando set
+
+        # Failed to find an error
+        return True
+
+    def randomize(self):
+        print('Randomizing....', end='')
+        sleep(5)
+        print('Done (for real).')
+        self.progressBar.stop()
 
     def generate_handler(self):
         if self.gen_thread is None or not self.gen_thread.is_alive():
-            self.gen_thread = threading.Thread(target=self.randomize)
-            self.progressBar.start(50)
-            self.gen_thread.start()
+
+            if self.settings_valid():
+                self.gen_thread = threading.Thread(target=self.randomize)
+                self.progressBar.start(50)
+                self.gen_thread.start()
 
     def get_general_page(self):
         frame = ttk.Frame(self.notebook)
@@ -1146,7 +1278,10 @@ class RandoGUI:
         return ret_frame
 
     def get_ro_listbox_settings_buttons(self, parent):
-        frame = ttk.Frame(parent)
+        outerframe = ttk.Frame(parent)
+
+        # frame for three special buttons
+        frame = ttk.Frame(outerframe)
 
         # Helper method for propogating locations to bosses
         def location_to_boss():
@@ -1224,7 +1359,26 @@ class RandoGUI:
             'Select all bosses except those from unselected locations.'
         )
 
-        return frame
+        frame.pack(side=tk.TOP)
+
+        extraoptionframe = ttk.Frame(parent)
+
+        checkbox = tk.Checkbutton(
+            outerframe,
+            text='Legacy Boss Placement',
+            variable=self.preserve_part_count
+        )
+        checkbox.pack()
+
+        CreateToolTip(
+            checkbox,
+            'Follow 3.1 boss randomizer rules.  N part bosses will be only '
+            'be placed in locations which normally contain an N part boss. '
+        )
+
+        extraoptionframe.pack()
+
+        return outerframe
 
     def get_ro_page(self):
         frame = ttk.Frame(self.notebook)
