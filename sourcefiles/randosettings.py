@@ -1,6 +1,8 @@
+from __future__ import annotations
 from enum import Flag, IntEnum, auto
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from ctenums import BossID, LocID, boss_loc_dict
 
 class StrIntEnum(IntEnum):
 
@@ -16,6 +18,7 @@ class StrIntEnum(IntEnum):
     @classmethod
     def inv_str_dict(cls) -> dict:
         return dict((str(x), x) for x in list(cls))
+
 
 class Difficulty(StrIntEnum):
     EASY = 0
@@ -56,6 +59,7 @@ class TabRandoScheme(StrIntEnum):
     UNIFORM = 0
     BINOMIAL = 1
 
+
 @dataclass
 class TabSettings:
     scheme: TabRandoScheme = TabRandoScheme.UNIFORM
@@ -66,6 +70,13 @@ class TabSettings:
     magic_max: int = 3
     speed_min: int = 1
     speed_max: int = 1
+
+
+@dataclass
+class ROSettings:
+    loc_list: list[int] = field(default_factory=list)
+    boss_list: list[BossID] = field(default_factory=list)
+    preserve_spots: bool = False
 
 
 class Settings:
@@ -80,6 +91,15 @@ class Settings:
 
         self.gameflags = GameFlags.FIX_GLITCH
         self.char_choices = [[i] for i in range(7)]
+
+        boss_list = \
+            BossID.get_one_part_bosses() + BossID.get_two_part_bosses()
+
+        loc_list = LocID.get_boss_locations()
+        loc_list.remove(LocID.SUN_PALACE)
+        loc_list.remove(LocID.SUNKEN_DESERT_DEVOURER)
+
+        self.ro_settings = ROSettings(loc_list, boss_list, False)
 
         self.tab_settings = TabSettings()
         self.seed = ''
@@ -146,6 +166,11 @@ class Settings:
         ret.gameflags = (GameFlags.BOSS_SCALE |
                          GameFlags.LOCKED_CHARS)
 
+        ret.ro_settings = ROSettings(
+            LocID.get_boss_locations(),
+            list(BossID),
+            False
+        )
+
         ret.seed = ''
         return ret
-
