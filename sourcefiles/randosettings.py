@@ -74,7 +74,7 @@ class TabSettings:
 
 @dataclass
 class ROSettings:
-    loc_list: list[int] = field(default_factory=list)
+    loc_list: list[BossID] = field(default_factory=list)
     boss_list: list[BossID] = field(default_factory=list)
     preserve_parts: bool = False
 
@@ -90,7 +90,7 @@ class Settings:
         self.shopprices = ShopPrices.NORMAL
 
         self.gameflags = GameFlags.FIX_GLITCH
-        self.char_choices = [[i] for i in range(7)]
+        self.char_choices = [[i for i in range(7)] for j in range(7)]
 
         boss_list = \
             BossID.get_one_part_bosses() + BossID.get_two_part_bosses()

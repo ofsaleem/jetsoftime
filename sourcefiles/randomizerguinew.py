@@ -1,4 +1,5 @@
 # python standard libraries
+from functools import reduce
 import os
 import pathlib
 import pickle
@@ -14,7 +15,7 @@ from tkinter import messagebox
 # custom/local libraries
 import randomizer
 from randosettings import Settings, GameFlags, Difficulty, ShopPrices, \
-    TechOrder, TabRandoScheme
+    TechOrder, TabSettings, TabRandoScheme, ROSettings
 from ctenums import LocID, BossID, boss_loc_dict
 
 
@@ -160,7 +161,7 @@ class RandoGUI:
 
     def set_settings(self, new_settings: Settings):
         self.__settings = new_settings
-        print(self.__settings.gameflags)
+        print(self.__settings.char_choices)
         self.update_gui_vars()
 
     settings = property(get_settings, set_settings)
@@ -205,6 +206,63 @@ class RandoGUI:
             self.input_file.set('test1')
             self.output_file.set('test2')
 
+    def gui_vars_to_settings(self):
+        '''Turns RandoGUI variables back into Settings object'''
+
+        # Look up difficulty enum given string
+        inv_diff_dict = Difficulty.inv_str_dict()
+
+        # Difficulties
+        self.settings.item_difficulty = \
+            inv_diff_dict[self.item_difficulty.get()]
+
+        self.settings.enemy_difficulty = \
+            inv_diff_dict[self.enemy_difficulty.get()]
+
+        # Main flags
+        flags = [x for x in list(GameFlags)
+                 if self.flag_dict[x].get() == 1]
+
+        self.settings.gameflags = reduce(lambda a, b: a | b, flags)
+
+        # Tabs
+        self.settings.tab_settings = \
+            TabSettings(
+                scheme=TabRandoScheme.inv_str_dict()[
+                    self.tab_rando_scheme.get()
+                ],
+                binom_success=self.tab_success_chance.get(),
+                power_min=self.power_tab_min.get(),
+                power_max=self.power_tab_max.get(),
+                magic_min=self.magic_tab_min.get(),
+                magic_max=self.magic_tab_max.get(),
+                speed_min=self.speed_tab_min.get(),
+                speed_max=self.speed_tab_max.get()
+            )
+
+        # DC (dup duals already taken, just char choices)
+        for i in range(7):
+            self.settings.char_choices[i] = []
+            for j in range(7):
+                if self.char_choices[i][j].get() == 1:
+                    self.settings.char_choices[i].append(j)
+
+        print(self.settings.char_choices)
+
+        # RO Settings
+        print(self.bosses)
+        boss_list = [self.bosses[i]
+                     for i in self.boss_listbox.curselection()]
+
+        loc_list = [self.boss_locations[i]
+                    for i in self.boss_location_listbox.curselection()]
+
+        self.settings.ro_settings = ROSettings(
+            loc_list,
+            boss_list,
+            self.preserve_part_count.get() == 1
+        )
+
     def update_gui_vars(self):
 
         # Update the flags
@@ -245,8 +303,15 @@ class RandoGUI:
             TabRandoScheme.str_dict()[self.settings.tab_settings.scheme]
         )
 
-        # print(self.bosses)
-        # print(self.settings.ro_boss_list)
+        self.tab_success_chance.set(self.settings.tab_settings.binom_success)
+
+        # DC char choices
+        for i in range(7):
+            for j in range(7):
+                if j in self.settings.char_choices[i]:
+                    self.char_choices[i][j].set(1)
+                else:
+                    self.char_choices[i][j].set(0)
 
         # push the ro flag lists
         ro_settings = self.settings.ro_settings
@@ -452,7 +517,7 @@ class RandoGUI:
 
         checkbutton = tk.Checkbutton(
             dcframe, text='Duplicate Duals',
-            variable=self.duplicate_duals
+            variable=self.flag_dict[GameFlags.DUPLICATE_TECHS]
         )
         checkbutton.grid(row=1, column=0)
         CreateToolTip(checkbutton,
@@ -1016,14 +1081,16 @@ class RandoGUI:
                         f"to fill the locations ({len(loc_selection_ind)}.  "
                         "Please use the \"Loc to Boss\" button to fix this."
                     )
-                self.notebook.select(self.ro_page)
-                return False
+                    self.notebook.select(self.ro_page)
+                    return False
         # End if boss rando set
 
         # Failed to find an error
         return True
 
     def randomize(self):
+        self.gui_vars_to_settings()
+        self.save_settings()
         print('Randomizing....', end='')
         sleep(5)
         print('Done (for real).')
@@ -1077,7 +1144,7 @@ class RandoGUI:
 
         self.get_tab_magnigtude_frame(
             frame,
-            'Magic',
+            'Speed',
             self.speed_tab_min,
             self.speed_tab_max
         ).pack(fill=tk.X)
