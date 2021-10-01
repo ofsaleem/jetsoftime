@@ -1,4 +1,4 @@
-from enum import IntEnum, auto
+from enum import Enum, IntEnum, auto
 
 
 class StrIntEnum(IntEnum):
@@ -84,7 +84,18 @@ class BossID(StrIntEnum):
         return cls.SON_OF_SUN, cls.RETINITE
 
 
+class CharID(StrIntEnum):
+    CRONO = 0
+    MARLE = 1
+    LUCCA = 2
+    ROBO = 3
+    FROG = 4
+    AYLA = 5
+    MAGUS = 6
+
+
 class LocID(StrIntEnum):
+    # Boss Locations
     BLACK_OMEN_ELDER_SPAWN = 0x60
     ZENAN_BRIDGE = 0x87
     CAVE_OF_MASAMUNE = 0x97
@@ -97,14 +108,38 @@ class LocID(StrIntEnum):
     KINGS_TRIAL_NEW = 0xC1
     GIANTS_CLAW_TYRANO = 0xC5
     MANORIA_COMMAND = 0xC6
-    SUN_PALACE = 0xFB
-    REPTITE_LAIR_AZALA_ROOM = 0x121
+    SUN_PALACE = 0xFB  # Also key item
+    REPTITE_LAIR_AZALA_ROOM = 0x121  # Also key item
     TYRANO_LAIR_NIZBEL = 0x130
     BLACK_OMEN_GIGA_MUTANT = 0x143
     BLACK_OMEN_TERRA_MUTANT = 0x145
     ZEAL_PALACE_THRONE_NIGHT = 0x14E
     OCEAN_PALACE_TWIN_GOLEM = 0x19E
     DEATH_PEAK_GUARDIAN_SPAWN = 0x1EF
+
+    # Character Recruitment Locations
+    MANORIA_SANCTUARY = 0x81
+    GUARDIA_QUEENS_CHAMBER_600 = 0x7A
+    PROTO_DOME = 0xE2
+    DACTYL_NEST_SUMMIT = 0x127
+    FROGS_BURROW = 0x8D
+
+    # Additional Key Item Locations
+    MT_WOE_SUMMIT = 0x18D
+    FIONAS_SHRINE = 0x39
+    ARRIS_DOME = 0xD6
+    GENO_DOME_MAINFRAME = 0x10C
+    GUARDIA_REAR_STORAGE = 0x1B8
+    GUARDIA_THRONEROOM_600 = 0x78
+    SNAIL_STOP = 0x35
+    CHORAS_CARPENTER_1000 = 0x3D
+    LUCCAS_WORKSHOP = 0x04
+
+    # Additional Sealed Chest Locations
+    
+
+    # Additional Script Chest Locations
+    NORTHERN_RUINS_BASEMENT = 0x42
 
     @classmethod
     def get_boss_locations(cls):
@@ -156,7 +191,8 @@ boss_loc_dict = {
 }
 
 
-class ItemID(IntEnum):
+# Copied and reformatted from Anguirel's list
+class ItemID(StrIntEnum):
     WOOD_SWORD = 0x01
     IRON_BLADE = 0x02
     STEELSABER = 0x03
@@ -332,9 +368,9 @@ class ItemID(IntEnum):
     ETHER = 0xC0
     MID_ETHER = 0xC1
     FULL_ETHER = 0xC2
-    ELIXER = 0xC3
+    ELIXIR = 0xC3
     HYPERETHER = 0xC4
-    MEGAELIXER = 0xC5
+    MEGAELIXIR = 0xC5
     HEAL = 0xC6
     REVIVE = 0xC7
     SHELTER = 0xC8
@@ -369,3 +405,212 @@ class ItemID(IntEnum):
     FANGS_2 = 0xE5
     HORNS_2 = 0xE6
     FEATHERS_2 = 0xE7
+
+
+# Extracted from Anguirel's Chronosanity code
+class TreasureID(StrIntEnum):
+    MT_WOE_1ST_SCREEN = auto()
+    MT_WOE_2ND_SCREEN_1 = auto()
+    MT_WOE_2ND_SCREEN_2 = auto()
+    MT_WOE_2ND_SCREEN_3 = auto()
+    MT_WOE_2ND_SCREEN_4 = auto()
+    MT_WOE_2ND_SCREEN_5 = auto()
+    MT_WOE_3RD_SCREEN_1 = auto()
+    MT_WOE_3RD_SCREEN_2 = auto()
+    MT_WOE_3RD_SCREEN_3 = auto()
+    MT_WOE_3RD_SCREEN_4 = auto()
+    MT_WOE_3RD_SCREEN_5 = auto()
+    MT_WOE_FINAL_1 = auto()
+    MT_WOE_FINAL_2 = auto()
+    MT_WOE_KEY = auto()
+    FIONA_KEY = auto()
+    ARRIS_DOME_RATS = auto()
+    ARRIS_DOME_FOOD_STORE = auto()
+    ARRIS_DOME_KEY = auto()
+    SUN_PALACE_KEY = auto()
+    SEWERS_1 = auto()
+    SEWERS_2 = auto()
+    SEWERS_3 = auto()
+    LAB_16_1 = auto()
+    LAB_16_2 = auto()
+    LAB_16_3 = auto()
+    LAB_16_4 = auto()
+    LAB_32_1 = auto()
+    PRISON_TOWER_1000 = auto()
+    GENO_DOME_1F_1 = auto()
+    GENO_DOME_1F_2 = auto()
+    GENO_DOME_1F_3 = auto()
+    GENO_DOME_1F_4 = auto()
+    GENO_DOME_ROOM_1 = auto()
+    GENO_DOME_ROOM_2 = auto()
+    GENO_DOME_PROTO4_1 = auto()
+    GENO_DOME_PROTO4_2 = auto()
+    GENO_DOME_2F_1 = auto()
+    GENO_DOME_2F_2 = auto()
+    GENO_DOME_2F_3 = auto()
+    GENO_DOME_2F_4 = auto()
+    GENO_DOME_KEY = auto()
+    FACTORY_LEFT_AUX_CONSOLE = auto()
+    FACTORY_LEFT_SECURITY_RIGHT = auto()
+    FACTORY_LEFT_SECURITY_LEFT = auto()
+    FACTORY_RIGHT_DATA_CORE_1 = auto()
+    FACTORY_RIGHT_DATA_CORE_2 = auto()
+    FACTORY_RIGHT_FLOOR_TOP = auto()
+    FACTORY_RIGHT_FLOOR_LEFT = auto()
+    FACTORY_RIGHT_FLOOR_BOTTOM = auto()
+    FACTORY_RIGHT_FLOOR_SECRET = auto()
+    FACTORY_RIGHT_CRANE_LOWER = auto()
+    FACTORY_RIGHT_CRANE_UPPER = auto()
+    FACTORY_RIGHT_INFO_ARCHIVE = auto()
+    # Inaccessible Robot storage chest omitted -- would be 0xE7
+    GIANTS_CLAW_KINO_CELL = auto()
+    GIANTS_CLAW_TRAPS = auto()
+    GIANTS_CLAW_CAVES_1 = auto()
+    GIANTS_CLAW_CAVES_2 = auto()
+    GIANTS_CLAW_CAVES_3 = auto()
+    GIANTS_CLAW_CAVES_4 = auto()
+    GIANTS_CLAW_CAVES_5 = auto()
+    GIANTS_CLAW_ROCK = auto()
+    GIANTS_CLAW_KEY = auto()
+    # Weirdness with Northern Ruins.  There's a variable set, only for these
+    # locations indicating whether you're in the
+    #   0x7F10A3 & 0x10 ->  600
+    #   0x7F10A3 & 0x20 -> 1000
+    NORTHERN_RUINS_BASEMENT_600 = auto()
+    NORTHERN_RUINS_UPSTAIRS_600 = auto()
+    NORTHERN_RUINS_UPSTAIRS_1000 = auto()
+    HEROS_GRAVE_1_600 = auto()
+    HEROS_GRAVE_2_600 = auto()
+    HEROS_GRAVE_3_600 = auto()
+    HEROS_GRAVE_1_1000 = auto()
+    HEROS_GRAVE_2_1000 = auto()
+    HEROS_GRAVE_3_1000 = auto()
+    # Frog locked one
+    NORTHERN_RUINS_BASEMENT_1000 = auto()
+    GUARDIA_BASEMENT_1 = auto()
+    GUARDIA_BASEMENT_2 = auto()
+    GUARDIA_BASEMENT_3 = auto()
+    GUARDIA_TREASURY_1 = auto()
+    GUARDIA_TREASURY_2 = auto()
+    GUARDIA_TREASURY_3 = auto()
+    KINGS_TRIAL_KEY = auto()
+    OZZIES_FORT_GUILLOTINES_1 = auto()
+    OZZIES_FORT_GUILLOTINES_2 = auto()
+    OZZIES_FORT_GUILLOTINES_3 = auto()
+    OZZIES_FORT_GUILLOTINES_4 = auto()
+    OZZIES_FORT_FINAL_1 = auto()
+    OZZIES_FORT_FINAL_2 = auto()
+    TRUCE_MAYOR_1F = auto()
+    TRUCE_MAYOR_2F = auto()
+    FOREST_RUINS = auto()
+    PORRE_MAYOR_2F = auto()
+    TRUCE_CANYON_1 = auto()
+    TRUCE_CANYON_2 = auto()
+    FIONAS_HOUSE_1 = auto()
+    FIONAS_HOUSE_2 = auto()
+    CURSED_WOODS_1 = auto()
+    CURSED_WOODS_2 = auto()
+    FROGS_BURROW_RIGHT = auto()
+    ZENAN_BRIDGE_KEY = auto()
+    SNAIL_STOP_KEY = auto()
+    LAZY_CARPENTER = auto()
+    HECKRAN_CAVE_SIDETRACK = auto()
+    HECKRAN_CAVE_ENTRANCE = auto()
+    HECKRAN_CAVE_1 = auto()
+    HECKRAN_CAVE_2 = auto()
+    # Taban items are weird, but the first one can be a normal ScriptTreasure
+    # The other items will need to
+    TABAN_KEY = auto()
+    KINGS_ROOM_1000 = auto()
+    QUEENS_ROOM_1000 = auto()
+    KINGS_ROOM_600 = auto()
+    QUEENS_ROOM_600 = auto()
+    ROYAL_KITCHEN = auto()
+    QUEENS_TOWER_600 = auto()
+    KINGS_TOWER_600 = auto()
+    KINGS_TOWER_1000 = auto()
+    QUEENS_TOWER_1000 = auto()
+    GUARDIA_COURT_TOWER = auto()
+    MANORIA_CATHEDRAL_1 = auto()
+    MANORIA_CATHEDRAL_2 = auto()
+    MANORIA_CATHEDRAL_3 = auto()
+    MANORIA_INTERIOR_1 = auto()
+    MANORIA_INTERIOR_2 = auto()
+    MANORIA_INTERIOR_3 = auto()
+    MANORIA_INTERIOR_4 = auto()
+    MANORIA_SHRINE_SIDEROOM_1 = auto()
+    MANORIA_SHRINE_SIDEROOM_2 = auto()
+    MANORIA_BROMIDE_1 = auto()
+    MANORIA_BROMIDE_2 = auto()
+    MANORIA_BROMIDE_3 = auto()
+    MANORIA_SHRINE_MAGUS_1 = auto()
+    MANORIA_SHRINE_MAGUS_2 = auto()
+    YAKRAS_ROOM = auto()
+    DENADORO_MTS_SCREEN2_1 = auto()
+    DENADORO_MTS_SCREEN2_2 = auto()
+    DENADORO_MTS_SCREEN2_3 = auto()
+    DENADORO_MTS_FINAL_1 = auto()
+    DENADORO_MTS_FINAL_2 = auto()
+    DENADORO_MTS_FINAL_3 = auto()
+    DENADORO_MTS_WATERFALL_TOP_1 = auto()
+    DENADORO_MTS_WATERFALL_TOP_2 = auto()
+    DENADORO_MTS_WATERFALL_TOP_3 = auto()
+    DENADORO_MTS_WATERFALL_TOP_4 = auto()
+    DENADORO_MTS_WATERFALL_TOP_5 = auto()
+    DENADORO_MTS_ENTRANCE_1 = auto()
+    DENADORO_MTS_ENTRANCE_2 = auto()
+    DENADORO_MTS_SCREEN3_1 = auto()
+    DENADORO_MTS_SCREEN3_2 = auto()
+    DENADORO_MTS_SCREEN3_3 = auto()
+    DENADORO_MTS_SCREEN3_4 = auto()
+    DENADORO_MTS_AMBUSH = auto()
+    DENADORO_MTS_SAVE_PT = auto()
+    DENADORO_MTS_KEY = auto()
+    BANGOR_DOME_SEAL_1 = auto()
+    BANGOR_DOME_SEAL_2 = auto()
+    BANGOR_DOME_SEAL_3 = auto()
+    TRANN_DOME_SEAL_1 = auto()
+    TRANN_DOME_SEAL_2 = auto()
+    ARRIS_DOME_SEAL_1 = auto()
+    ARRIS_DOME_SEAL_2 = auto()
+    ARRIS_DOME_SEAL_3 = auto()
+    ARRIS_DOME_SEAL_4 = auto()
+    TRUCE_INN_SEALED_600 = auto()
+    PORRE_ELDER_SEALED_1 = auto()
+    PORRE_ELDER_SEALED_2 = auto()
+    GUARDIA_CASTLE_SEALED_600 = auto()
+    GUARDIA_FOREST_SEALED_600 = auto()
+    TRUCE_INN_SEALED_1000 = auto()
+    PORRE_MAYOR_SEALED_1 = auto()
+    PORRE_MAYOR_SEALED_2 = auto()
+    GUARDIA_FOREST_SEALED_1000 = auto()
+    GUARDIA_CASTLE_SEALED_1000 = auto()
+    HECKRAN_SEALED_1 = auto()
+    HECKRAN_SEALED_2 = auto()
+    PYRAMID_LEFT = auto()
+    PYRAMID_RIGHT = auto()
+    MAGIC_CAVE_SEALED = auto()
+    MYSTIC_MT_STREAM = auto()
+    FOREST_MAZE_1 = auto()
+    FOREST_MAZE_2 = auto()
+    FOREST_MAZE_3 = auto()
+    FOREST_MAZE_4 = auto()
+    FOREST_MAZE_5 = auto()
+    FOREST_MAZE_6 = auto()
+    FOREST_MAZE_7 = auto()
+    FOREST_MAZE_8 = auto()
+    FOREST_MAZE_9 = auto()
+    REPTITE_LAIR_REPTITES_1 = auto()
+    REPTITE_LAIR_REPTITES_2 = auto()
+    REPTITE_LAIR_KEY = auto()
+    DACTYL_NEST_1 = auto()
+    DACTYL_NEST_2 = auto()
+    DACTYL_NEST_3 = auto()
+    MELCHIOR_KEY = auto()
+    FROGS_BURROW_LEFT = auto()
+    # Tabs later if they're going to be randomized
+    # GUARDIA_FOREST_POWER_TAB_600 = auto()
+    # GUARDIA_FOREST_POWER_TAB_1000 = auto()
+    # SUN_KEEP_POWER_TAB_600 = auto()
+    # MEDINA_ELDER_SPEED_TAB = auto()
+    # MEDINA_ELDER_MAGIC_TAB = auto()

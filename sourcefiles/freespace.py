@@ -1,110 +1,35 @@
 # I am fed up with hardcoding write locations.
 from __future__ import annotations
-from byteops import get_value_from_bytes_be  # for ips marker
+from enum import Enum
 from io import BytesIO
+from typing import Tuple
+
+from byteops import get_value_from_bytes_be  # for ips marker
 
 
-class FreeSpace(BytesIO):
-    def __init__(self, buf, is_free):
+class FSWriteType(Enum):
+    MARK_USED = 0
+    MARK_FREE = 1
+    NO_MARK = 2
 
-        super().__init__(buf)
 
-        self.buffer_size = len(buf)
-        self.markers = [0, self.buffer_size]
+class FreeSpace():
+    def __init__(self, num_bytes, is_free):
+
+        self.num_bytes = num_bytes
+        self.markers = [0, self.num_bytes]
         self.first_free = is_free
-
-    def write(self, payload, is_free=False):
-        start = self.tell()
-        end = start+len(payload)
-
-        self.seek(0, 2)
-        buf_end = self.tell()
-        self.seek(start)
-        super().write(payload)
-
-        if end > buf_end:
-            # print(' '.join(f"{x:02X}" for x in payload))
-            self.__extend_end_marker(end, is_free)
-            # input()
-
-        self.mark_block((start, end), is_free)
-
-    # Apply one of Anskiy's .txt patches and mark free space
-    # Code copied from patcher.py with few modifications.
-    # I am assuming that all writes are using up free space.
-    def patch_txt_file(self, filename):
-        with open(filename, 'r') as patch_obj:
-            self.patch_txt(patch_obj)
-
-    def patch_txt(self, patch_obj):
-        for line in patch_obj:
-            line = line.split(":")
-            address = int(line[0], 0x10)
-            data = bytearray.fromhex(line[2])
-
-            # print(f"{address:06X}: ")
-            # print(' '.join(f"{x:02X}" for x in data))
-            self.seek(address)
-            self.write(data, False)
-
-    # Apply an ips patch.  Most writes are considered used space, but long
-    # rle blocks of 0s are considered free space.
-    def patch_ips_file(self, filename):
-        with open(filename, 'rb') as patch_obj:
-            self.patch_ips(patch_obj)
-
-    def patch_ips(self, patch_obj):
-        p = patch_obj
-
-        p.seek(0, 2)
-        patch_size = p.tell()
-
-        p.seek(5)  # ignore the "PATCH" at the start
-
-        while p.tell() < patch_size - 5:
-
-            # Get the location of the payload
-            addr_bytes = p.read(3)
-            addr = get_value_from_bytes_be(addr_bytes)
-
-            # Get the size of the payload
-            size_bytes = p.read(2)
-            size = get_value_from_bytes_be(size_bytes)
-
-            is_free = False
-
-            if size == 0:
-                # RLE block
-                rle_size_bytes = p.read(2)
-                rle_size = get_value_from_bytes_be(rle_size_bytes)
-
-                rle_byte = p.read(1)
-
-                # Runs of a single symbol are usually free space?
-                # IPS will write 0 blocks to extend the length of a file.
-                # We should mark these as free
-                if rle_byte[0] == 0 and rle_size >= 0x10:
-                    is_free = True
-
-                payload = bytearray([rle_byte[0]]*rle_size)
-            else:
-                # Normal block
-                payload = p.read(size)
-
-            self.seek(addr)
-            self.write(payload, is_free)
-            # self.write_data(addr, payload, is_free)
 
     # Mark a block of the buffer as free/not free depending on is_free.
     # block is a half-open interval [block[0], block[1]) as is Python's way.
-    def mark_block(self, block, is_free):
+    def mark_block(self,
+                   block: Tuple[int, int],
+                   is_free: FSWriteType):
 
-        if is_free:
-            pass
-            # print(f"Freed [{block[0]:06X}, {block[1]:06X})")
+        if is_free == FSWriteType.NO_MARK:
+            return
         else:
-            pass
-            # print(f"Used [{block[0]:06X}, {block[1]:06X})")
+            is_free = (is_free == FSWriteType.MARK_FREE)
 
         # maybe verify block is valid?
         if block[1] <= block[0]:
@@ -174,7 +99,7 @@ class FreeSpace(BytesIO):
             del(self.markers[start+1:end])
     # End of mark_block
 
-    def __extend_end_marker(self, new_end, is_free):
+    def extend_end_marker(self, new_end, is_free):
         last_free = self.__is_free(len(self.markers)-2)
 
         # print(f"{new_end:06X}, {is_free}")
@@ -215,7 +140,7 @@ class FreeSpace(BytesIO):
                     break
 
             if ret is None:
-                print("ACK!")
+                print("Error: Not enough free space.")
                 exit()
 
             return ret
@@ -274,6 +199,7 @@ class FreeSpace(BytesIO):
 
         return list(tries)
 
+    '''
     # writes data into the buffer.  The write can introduce free space, such
     # as when ipswriter extends a rom.  So the is_free flag (default False)
     # indicates whether the written area is free or not.
@@ -285,32 +211,7 @@ class FreeSpace(BytesIO):
         self.write(data, is_free)
 
         self.seek(x)
-
-        '''
-        self.data[addr:addr+len(data)]
-        if addr+len(data) > self.markers[-1]:
-            self.__extend_end_marker(addr+len(data), is_free)
-
-        self.mark_block(addr, addr+len(data), is_free)
-        '''
-
-    # writes data to the buffer and marks the space as no longer free.
-    # Errors out if there is insufficient space
-    # returns the address where the data gets written
-    def write_data_to_freespace(self, data, hint=0):
-        write_addr = self.get_free_addr(self, len(data), hint)
-
-        if write_addr is None and hint != 0:
-            print('Warning: Insufficient free space.  Ignoring hint.')
-            write_addr = self.get_free_addr(self, len(data), 0)
-
-        if write_addr is None:
-            print('Error: Insufficient free space. Quitting.')
-            quit()
-        else:
-            self.data[write_addr:write_addr+len(data)] = data[:]
-            self.mark_block((write_addr, write_addr+len(data)), False)
-            return write_addr
+    '''
 
     # Mark a file with Anskiy's .txt patch format
     # Duplicates much code.  Consider adding patching functionality into
@@ -334,9 +235,6 @@ class FreeSpace(BytesIO):
                 address += 1
                 i += 1
             """
-
-    def verify_space(self, start, len):
-        pass
 
     def mark_blocks_txt(self, patch_filename):
         with open(patch_filename, 'r') as patch_obj:
@@ -391,7 +289,7 @@ class FreeSpace(BytesIO):
             self.mark_blocks_ips_obj(ips_obj)
 
     def print_blocks(self):
-        '''
+
         print('Free blocks: ')
 
         if self.first_free is True:
@@ -403,7 +301,7 @@ class FreeSpace(BytesIO):
             print('[%6.6X, %6.6X)\t %X bytes'
                   % (self.markers[x], self.markers[x+1],
                      (self.markers[x+1]-self.markers[x])))
-        '''
+
         print('Used blocks: ')
 
         if self.first_free is True:
@@ -434,54 +332,136 @@ class FreeSpace(BytesIO):
             return self.__search(start_ind, search_ind-1, addr)
 
 
+class FSRom(BytesIO):
+
+    def __init__(self, rom: bytes, is_free=False):
+        super().__init__(rom)
+        self.space_manager = FreeSpace(len(rom), is_free)
+
+    # Apply one of Anskiy's .txt patches and mark free space
+    # Code copied from patcher.py with few modifications.
+    # I am assuming that all writes are using up free space.
+    def patch_txt_file(self, filename):
+        with open(filename, 'r') as patch_obj:
+            self.patch_txt(patch_obj)
+
+    def patch_txt(self, patch_obj):
+        for line in patch_obj:
+            line = line.split(":")
+            address = int(line[0], 0x10)
+            data = bytearray.fromhex(line[2])
+
+            # print(f"{address:06X}: ")
+            # print(' '.join(f"{x:02X}" for x in data))
+            self.seek(address)
+            self.write(data, FSWriteType.MARK_USED)
+
+    # Apply an ips patch.  Most writes are considered used space, but long
+    # rle blocks of 0s are considered free space.
+    def patch_ips_file(self, filename):
+        with open(filename, 'rb') as patch_obj:
+            self.patch_ips(patch_obj)
+
+    def patch_ips(self, patch_obj):
+        p = patch_obj
+
+        p.seek(0, 2)
+        patch_size = p.tell()
+
+        p.seek(5)  # ignore the "PATCH" at the start
+
+        while p.tell() < patch_size - 5:
+
+            # Get the location of the payload
+            addr_bytes = p.read(3)
+            addr = get_value_from_bytes_be(addr_bytes)
+
+            # Get the size of the payload
+            size_bytes = p.read(2)
+            size = get_value_from_bytes_be(size_bytes)
+
+            mark_set = FSWriteType.MARK_USED
+
+            if size == 0:
+                # RLE block
+                rle_size_bytes = p.read(2)
+                rle_size = get_value_from_bytes_be(rle_size_bytes)
+
+                rle_byte = p.read(1)
+
+                # Runs of a single symbol are usually free space?
+                # IPS will write 0 blocks to extend the length of a file.
+                # We should mark these as free
+                if rle_byte[0] == 0 and rle_size >= 0x10:
+                    mark_set = FSWriteType.MARK_FREE
+
+                payload = bytearray([rle_byte[0]]*rle_size)
+            else:
+                # Normal block
+                payload = p.read(size)
+
+            self.seek(addr)
+            self.write(payload, mark_set)
+
+    def write(self, payload,
+              write_mark: FSWriteType = FSWriteType.NO_MARK):
+        # avoid long names
+        spaceman = self.space_manager
+
+        start = self.tell()
+        end = start+len(payload)
+
+        self.seek(0, 2)
+        buf_end = self.tell()
+        self.seek(start)
+        BytesIO.write(self, payload)
+
+        if end > buf_end:
+            if write_mark == FSWriteType.NO_MARK:
+                print('Error: Write extended buffer with NO_MARK set')
+                exit()
+            else:
+                spaceman.extend_end_marker(end, write_mark)
+
+        spaceman.mark_block((start, end), write_mark)
+
+    # writes data to the buffer and marks the space as no longer free.
+    # Errors out if there is insufficient space
+    # returns the address where the data gets written
+    def write_data_to_freespace(self, data, hint=0):
+        spaceman = self.space_manager
+        write_addr = spaceman.get_free_addr(self, len(data), hint)
+
+        if write_addr is None and hint != 0:
+            print('Warning: Insufficient free space.  Ignoring hint.')
+            write_addr = spaceman.get_free_addr(self, len(data), 0)
+
+        if write_addr is None:
+            print('Error: Insufficient free space. Quitting.')
+            quit()
+        else:
+            self.seek(write_addr)
+            self.write(write_addr, FSWriteType.MARK_USED)
+            return write_addr
+
+
+def main():
+
+    fs = FreeSpace(0x600000, True)
+    fs.mark_block((0, 0x400000), FSWriteType.MARK_USED)
+
+    fs.mark_blocks_ips('./patch.ips')
+    fs.mark_blocks_txt('./patches/patch_codebase.txt')
+    fs.print_blocks()
+
+    with open('./roms/ct.sfc', 'rb') as infile:
+        fsrom = FSRom(infile.read(), False)
+
+    fsrom.patch_ips_file('./patch.ips')
+    fsrom.patch_txt_file('./patches/patch_codebase.txt')
+    fsrom.print_blocks()
+
+
 # Test using patch.ips and patch_codebase.txt
 if __name__ == '__main__':
-
-    '''
-    with open('jets_test.sfc', 'rb') as infile,\
-         open('./patches/chardup_burrow_patch.ips', 'rb') as patch:
-
-        rom = bytearray(infile.read())
-        fs = FreeSpace(rom, True)
-
-        fs.mark_blocks_ips_obj(patch)
-
-        fs.print_blocks()
-    '''
-
-    with open('jets_test.sfc', 'rb') as infile:
-        rom = bytearray(infile.read())
-
-    fsrom = FreeSpace(rom, True)
-    fsrom.mark_blocks_ips('./patches/lost.ips')
-
-    fsrom.print_blocks()
-    exit()
-    
-    
-    with open('ct_vanilla.sfc', 'rb') as infile,\
-         open('test-out.sfc', 'r+b') as outfile,\
-         open('patch.ips', 'rb') as patch:
-
-        import ipswriter
-        rom = bytearray(infile.read())
-        outfile.write(rom)
-
-        # mainly just to expand it.
-        ipswriter.write_patch_objs(patch, outfile)
-
-        outfile.seek(0)
-        new_rom = outfile.read()
-
-        fs = FreeSpace(new_rom, True)
-        print(fs.markers)
-
-        print(len(fs.data))
-        fs.mark_block((0, 0x400000), False)
-        print(fs.markers)
-
-        fs.print_blocks()
-        fs.mark_blocks_ips('patch.ips')
-        fs.print_blocks()
-        fs.mark_blocks_txt('./patches/patch_codebase.txt')
-        fs.print_blocks()
+    main()
