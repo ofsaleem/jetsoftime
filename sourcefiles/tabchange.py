@@ -1,14 +1,127 @@
 import random as rand
 
-def to_little_endian(value, num_bytes):
-    ret = bytearray()
-    while(num_bytes > 0):
-        x = value % 0x100
-        ret.append(x)
-        value = value//0x100
-        num_bytes -= 1
-    return ret
+from byteops import to_little_endian, to_rom_ptr
+from ctrom import CTRom
+from freespace import FSWriteType
+import randoconfig as cfg
+import randosettings as rset
 
+
+def choose_binom(min_val: int, max_val: int, p_succ: float):
+
+    num_flips = max_val - min_val + 1
+    add = 0
+    for i in range(num_flips):
+        add += int(rand.random() < p_succ)
+
+    return min_val+add
+
+
+def process_ctrom(ctrom: CTRom,
+                  settings: rset.Settings,
+                  config: cfg.RandoConfig):
+
+    tab_settings = settings.tab_settings
+
+    if tab_settings.scheme == rset.TabRandoScheme.BINOMIAL:
+        p_succ = tab_settings.binom_success
+
+        def rand_func(x: int, y: int):
+            return choose_binom(x, y, p_succ)
+    elif tab_settings.scheme == rset.TabRandoScheme.UNIFORM:
+
+        def rand_func(x: int, y: int):
+            return rand.randrange(x, y+1)
+
+    power_amt = rand_func(tab_settings.power_min, tab_settings.power_max)
+    magic_amt = rand_func(tab_settings.magic_min, tab_settings.magic_max)
+    speed_amt = rand_func(tab_settings.speed_min, tab_settings.speed_max)
+
+    rewrite_tabs_fs(ctrom, power_amt, magic_amt, speed_amt)
+
+
+# New version that uses the freespace manager to write wherever is free
+# if no argument is given.
+def rewrite_tabs_fs(ctrom: CTRom, power_amt, magic_amt, speed_amt,
+                    rt_start=None):
+
+    power_hex = bytearray([power_amt]).hex()
+    magic_hex = bytearray([magic_amt]).hex()
+    speed_hex = bytearray([speed_amt]).hex()
+
+    spaceman = ctrom.rom_data.space_manager
+
+    # Change the effect of the tabs
+    # put the new routine at rt_start
+    rt = bytearray.fromhex('18 65 6F AA E2 20 AD BD 0D C9 01 D0 0A' +
+                           'A9' + power_hex +
+                           '85 10 A9 63 85 12 80 16 C9 06 D0 0A' +
+                           'A9' + magic_hex +
+                           '85 10 A9 63 85 12 80 08' +
+                           'A9' + speed_hex +
+                           '85 10 A9 10 85 12' +
+                           'BD 0B 00 18 65 10 C5 12 90 02 A5 12 9D 0B 00' +
+                           'A6 00 BD 2F 00 18 65 10 C5 12 90 02	A5 12' +
+                           '9D 2F 00 5C 0E B3 C2')
+
+    if rt_start is None:
+        rt_start = spaceman.get_free_addr(len(rt))
+
+    rt_start_b = to_little_endian(to_rom_ptr(rt_start), 3)
+
+    #  Turn CLC, ADC, TAX into JMP at $C2B2F8
+    jmp = bytearray([0x5C]) + rt_start_b
+
+    # old_rom[0x02B2F8:0x02B2F8+len(jmp)] = jmp[:]
+    ctrom.rom_data.seek(0x02B2F8)
+    ctrom.rom_data.write(jmp)
+
+    # old_rom[rt_start:rt_start+len(rt)] = rt[:]
+    ctrom.rom_data.seek(rt_start)
+    ctrom.rom_data.write(rt)
+
+    # Change the number that is displayed when a tab is used
+    rt = bytearray.fromhex('AD BD 0D 29 FF 00 C9 01 00 D0 05' +
+                           'A9' + power_hex + '00' +
+                           '80 0D C9 06 00 D0 05' +
+                           'A9' + magic_hex + '00' +
+                           '80 03' +
+                           'A9' + speed_hex + '00' +
+                           '9D 63 0F 5C D6 B2 C2')
+
+    if rt_start is None:
+        disp_start = spaceman.get_free_addr(len(rt))
+    else:
+        # put the display routine a little bit later on
+        disp_start = rt_start + 0x100
+
+    disp_start_b = to_little_endian(to_rom_ptr(disp_start), 3)
+    jmp = bytearray([0x5C]) + disp_start_b
+
+    # old_rom[0x02B2D0:0x02B2D0+len(jmp)] = jmp[:]
+    ctrom.rom_data.seek(0x02B2D0)
+    ctrom.rom_data.write(jmp)
+
+    # old_rom[disp_start:disp_start+len(rt)] = rt[:]
+    ctrom.rom_data.seek(disp_start)
+    ctrom.rom_data.write(rt)
+
+    # Overwrite numbers in item descriptions
+    # old_rom[0x375DC4] = pow_add[0] + 0xD4
+    # old_rom[0x375DCF] = mag_add[0] + 0xD4
+    # old_rom[0x375DD9] = spd_add[0] + 0xD4
+    ctrom.rom_data.seek(0x375DC4)
+    ctrom.rom_data.write(bytes([power_amt+0xD4]))
+
+    ctrom.rom_data.seek(0x375DCF)
+    ctrom.rom_data.write(bytes([magic_amt+0xD4]))
+
+    ctrom.rom_data.seek(0x375DD9)
+    ctrom.rom_data.write(bytes([magic_amt+0xD4]))
+
+
+
+# Deprecated.  Keeping around for now to hold the rom documentation.
 def rewrite_tabs(filename, rt_start=0x5F7450):
     with open(filename, 'rb') as file:
         old_rom = bytearray(file.read())
@@ -104,7 +217,7 @@ def rewrite_tabs(filename, rt_start=0x5F7450):
     rt = bytearray.fromhex('18 65 6F AA E2 20 AD BD 0D C9 01 D0 0A' +
                            'A9' + pow_add.hex() +
                            '85 10 A9 63 85 12 80 16 C9 06 D0 0A' +
-	                   'A9' + mag_add.hex() +
+                           'A9' + mag_add.hex() +
                            '85 10 A9 63 85 12 80 08' +
                            'A9' + spd_add.hex() +
                            '85 10 A9 10 85 12' +
@@ -113,16 +226,16 @@ def rewrite_tabs(filename, rt_start=0x5F7450):
                            '9D 2F 00 5C 0E B3 C2')
 
     old_rom[rt_start:rt_start+len(rt)] = rt[:]
-    
+
     #print("%2.2X" % len(rt))
-    
+
     # 3) Change the number that pops up
-    # $C2/B2D0 A9 01 00    LDA #$0001              
+    # $C2/B2D0 A9 01 00    LDA #$0001
     # $C2/B2D3 9D 63 0F    STA $0F63,x[$7E:0F63]
     # Need to include the STA command in after the branch.
 
     disp_start = rt_start + 0x100
-    disp_start_addr = to_little_endian(disp_start,3)
+    disp_start_addr = to_little_endian(disp_start, 3)
 
     jmp = bytearray.fromhex('5C' + disp_start_addr.hex())
 
@@ -137,11 +250,11 @@ def rewrite_tabs(filename, rt_start=0x5F7450):
                            '9D 63 0F 5C D6 B2 C2')
 
     old_rom[disp_start:disp_start+len(rt)] = rt[:]
-    
+
     # 4) Change the descriptions to have the right magnitudes
     # For now, don't allow for magnitudes > 9.  We just have to overwrite
     # The right byte in the description.
-    
+
     # In jets, descs are in a different place
     # Power: 0x375DBD --> 'E1 AF 62 26 E2 EF EC D5 00'
     #    The 'D5' is '1' (0x375DC4)
@@ -149,13 +262,53 @@ def rewrite_tabs(filename, rt_start=0x5F7450):
     #    The 'D5' is '1' (0x375DCF)
     # Speed: 0x375DD1 --> 'E1 B2 C9 6D BD E2 EF EC D5 00'
     #    Again, the 'D5' is '1 (0x375DD9)
-    
+
     old_rom[0x375DC4] = pow_add[0] + 0xD4
     old_rom[0x375DCF] = mag_add[0] + 0xD4
     old_rom[0x375DD9] = spd_add[0] + 0xD4
-    
+
     # If magnitudes over 9 are desired, then there's some surgery that needs
     # to be done to the description pointer table.
-    
-    with open(filename,'wb') as outfile:
+
+    with open(filename, 'wb') as outfile:
         outfile.write(old_rom)
+
+
+def main():
+
+    # Set up a ctrom environment
+    filename = './roms/jets_test.sfc'
+
+    ctrom = CTRom.from_file(filename, True)
+    space_manager = ctrom.rom_data.space_manager
+
+    # Set up some safe free blocks.
+    space_manager.mark_block((0, 0x40FFFF),
+                             FSWriteType.MARK_USED)
+    space_manager.mark_block((0x411007, 0x5B8000),
+                             FSWriteType.MARK_FREE)
+
+    # Make some tabs settings changes
+    settings = rset.Settings.get_race_presets()
+
+    settings.tab_settings.scheme = rset.TabRandoScheme.BINOMIAL
+    
+    settings.tab_settings.power_min = 1
+    settings.tab_settings.power_max = 5
+
+    settings.tab_settings.magic_min = 3
+    settings.tab_settings.magic_max = 6
+
+    settings.tab_settings.speed_min = 2
+    settings.tab_settings.speed_max = 3
+
+    config = cfg.RandoConfig()
+
+    process_ctrom(ctrom, settings, config)
+
+    with open('./roms/jets_test.sfc', 'wb') as outfile:
+        outfile.write(ctrom.rom_data.read())
+
+
+if __name__ == '__main__':
+    main()
