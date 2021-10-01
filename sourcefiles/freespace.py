@@ -448,6 +448,22 @@ class FSRom(BytesIO):
 def main():
 
     fs = FreeSpace(0x600000, True)
+    fs2 = FreeSpace(0x600000, True)
+
+    fs.mark_blocks_txt('./patches/save_anywhere_patch.txt')
+    fs.mark_blocks_txt('./patches/unequip_patch.txt')
+    fs.mark_blocks_txt('./patches/fadeout_patch.txt')
+    fs.mark_blocks_txt('./patches/hp_overflow_patch.txt')
+
+    fs2.mark_blocks_txt('./patches/fast_overworld_walk_patch.txt')
+    fs2.mark_blocks_txt('./patches/faster_epoch_patch.txt')
+    fs2.mark_blocks_txt('./patches/faster_menu_dpad.txt')
+
+    fs.print_blocks()
+    fs2.print_blocks()
+
+    exit()
+    
     fs.mark_block((0, 0x400000), FSWriteType.MARK_USED)
 
     fs.mark_blocks_ips('./patch.ips')

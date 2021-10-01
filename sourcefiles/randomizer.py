@@ -24,6 +24,71 @@ import fastmagic
 import charrando
 import roboribbon
 
+from ctrom import CTRom
+
+import randoconfig as cfg
+import randosettings as rset
+
+
+class Randomizer:
+
+    def __init__(self, rom: bytearray, settings: rset.Settings):
+
+        self.config = cfg.RandoConfig()
+        self.ctrom = CTRom(rom)
+        self.settings = settings
+
+        # Apply the patches that always are applied
+        self.ctrom.rom_data.patch_ips_file('./patch.ips')
+        self.ctrom.rom_data.patch_txt('./patches/patch_codebase.txt')
+
+        # I verified that the following convenience patches which are now
+        # always applied are disjoint from the glitch fix patches, so it's
+        # safe to move them here.
+        rom_data = self.ctrom.rom_data
+        rom_data.patch_txt_file('./patches/fast_overworld_walk_patch.txt')
+        rom_data.patch_txt_file('./patches/faster_epoch_patch.txt')
+        rom_data.patch_txt_file('./patches/faster_menu_dpad.txt')
+
+        # It should be safe to move the robo's ribbon code here since it
+        # also doesn't depend on flags and should be applied prior to anything
+        # else that messes with the items because it shuffles effects
+        roboribbon.robo_ribbon_speed(rom_data.getbuffer())
+
+    def write_spoiler_log(self, filename):
+        pass
+
+    def randomize(self):
+
+        Flags = rset.GameFlags
+        gameflags = self.settings.gameflags
+        rom_data = self.ctrom.rom_data
+        
+        if Flags.FIX_GLITCH in gameflags:
+            self.fix_glitches()
+
+        if Flags.ZEAL_END in gameflags:
+            rom_data.patch_txt_file('./patches/zeal_end_boss.txt')
+
+        if Flags.LOST_WORLDS in gameflags:
+            rom_data.patch_ips_file('./patches/lost.ips')
+        elif Flags.FAST_PENDANT in gameflags:
+            # Note: This logic should be enforced on the gui end too
+            rom_data.patch_txt_file('./patches/fast_charge_pendant.txt')
+
+        if Flags.UNLOCKED_MAGIC in gameflags:
+            fastmagic.process_ctrom(self.ctrom, self.settings, self.config)
+
+        tabwriter.process_ctrom(self.ctrom, self.settings, self.config)
+
+    # Just apply the various glitch fix patches
+    def fix_glitches(self):
+        rom_data = self.ctrom.rom_data
+        rom_data.patch_txt_file('./patches/save_anywhere_patch.txt')
+        rom_data.patch_txt_file('./patches/unequip_patch.txt')
+        rom_data.patch_txt_file('./patches/fadeout_patch.txt')
+        rom_data.patch_txt_file('./patches/hp_overflow_patch.txt')
+
 def read_names():
         p = open("names.txt","r")
         names = p.readline()
