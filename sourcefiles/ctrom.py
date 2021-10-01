@@ -39,7 +39,7 @@ class CTRom():
         with open(filename, 'rb') as infile:
             rom_bytes = infile.read()
 
-        return cls(rom_bytes)
+        return cls(rom_bytes, ignore_checksum)
 
     def write_all_scripts_to_rom(self):
         script_dict = self.script_manager.script_dict

@@ -1,6 +1,9 @@
 
 from byteops import get_value_from_bytes, to_file_ptr
 from enum import IntEnum
+from ctrom import CTRom
+import randosettings as rset
+import randoconfig as cfg
 
 
 class Char(IntEnum):
@@ -11,6 +14,15 @@ class Char(IntEnum):
     FROG = 4
     AYLA = 5
     MAGUS = 6
+
+
+def process_ctrom(ctrom: CTRom,
+                  settings: rset.Settings,
+                  config: cfg.RandoConfig):
+    # Not sure whether flag tests should be in randomize() or in the various
+    # module process_ctrom routines
+    if rset.GameFlags.UNLOCKED_MAGIC in settings.gameflags:
+        set_fast_magic(ctrom.rom_data.getbuffer())
 
 
 # This is more in line with how the other randomizer functions work
@@ -98,8 +110,7 @@ def set_fast_magic(rom):
         # Set the threshold to 8
         rom[thresh_ptr + x] = 0x08
 
-
-if __name__ == '__main__':
+def main():
     with open("test.sfc", 'rb') as file:
         rom = bytearray(file.read())
         with open("test-out-2.sfc", 'w+b') as outfile2:
@@ -111,3 +122,7 @@ if __name__ == '__main__':
             outfile.write(rom)
 
         set_fast_magic_file("test-out-2.sfc")
+
+if __name__ == '__main__':
+                  
+    
