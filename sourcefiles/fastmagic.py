@@ -123,6 +123,6 @@ def main():
 
         set_fast_magic_file("test-out-2.sfc")
 
+
 if __name__ == '__main__':
-                  
-    
+    main()

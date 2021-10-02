@@ -40,7 +40,7 @@ class Randomizer:
 
         # Apply the patches that always are applied
         self.ctrom.rom_data.patch_ips_file('./patch.ips')
-        self.ctrom.rom_data.patch_txt('./patches/patch_codebase.txt')
+        self.ctrom.rom_data.patch_txt_file('./patches/patch_codebase.txt')
 
         # I verified that the following convenience patches which are now
         # always applied are disjoint from the glitch fix patches, so it's
@@ -511,12 +511,25 @@ def generate_rom():
        f.close()
      print("Randomization completed successfully.")
 
-     
+
+def main():
+    filename = './roms/ct.sfc'
+    with open(filename, 'rb') as infile:
+        rom = infile.read()
+
+    settings = rset.Settings.get_race_presets()
+
+    rando = Randomizer(rom, settings)
+    rando.randomize()
+
+
 if __name__ == "__main__":
+    main()
+    '''
   if len(sys.argv) > 1 and sys.argv[1] == "-c":
     command_line()
     generate_rom()
     input("Press Enter to exit.")
   else:
     gui.guiMain()
-  
+    '''
