@@ -134,9 +134,22 @@ class LocID(StrIntEnum):
     SNAIL_STOP = 0x35
     CHORAS_CARPENTER_1000 = 0x3D
     LUCCAS_WORKSHOP = 0x04
-
-    # Additional Sealed Chest Locations
     
+    # Additional Sealed Chest Locations
+    NORTHERN_RUINS_ANTECHAMBER = 0x42
+    NORTHERN_RUINS_BACK_ROOM = 0x46
+    TRUCE_INN_1000 = 0x0C
+    TRUCE_INN_600_2F = 0x75
+    FOREST_RUINS = 0x2A
+    PORRE_ELDER = 0x9A
+    PORRE_MAYOR_2F = 33
+    GUARDIA_CASTLE_KINGS_TOWER_600 = 0x1E0
+    GUARDIA_CASTLE_KINGS_TOWER_1000 = 0x1E6
+    GUARDIA_FOREST_600 = 0x77
+    GUARDIA_FOREST_DEAD_END = 0x14
+    # This map gets split, but the sealed chest is on the original map
+    HECKRAN_CAVE_PASSAGEWAYS = 0x2F
+    MAGIC_CAVE_INTERIOR = 0xA4
 
     # Additional Script Chest Locations
     NORTHERN_RUINS_BASEMENT = 0x42
@@ -298,7 +311,7 @@ class ItemID(StrIntEnum):
     BLUE_VEST = 0x77
     RED_VEST = 0x78
     TABAN_VEST = 0x79
-    TABAM_SUIT = 0x7A
+    TABAN_SUIT = 0x7A
     HIDE_CAP = 0x7C
     BRONZEHELM = 0x7D
     IRON_HELM = 0x7E
@@ -408,6 +421,9 @@ class ItemID(StrIntEnum):
 
 
 # Extracted from Anguirel's Chronosanity code
+# Non-Chronosanity chests checked vs frankin's (?) spreadsheet at
+# https://docs.google.com/spreadsheets/
+#   d/19-CgUeYJrHJ8A1jJJWN1gvGaiFyvM5_aoE15POjW8YQ/edit#gid=1968430651
 class TreasureID(StrIntEnum):
     MT_WOE_1ST_SCREEN = auto()
     MT_WOE_2ND_SCREEN_1 = auto()
@@ -473,18 +489,21 @@ class TreasureID(StrIntEnum):
     GIANTS_CLAW_ROCK = auto()
     GIANTS_CLAW_KEY = auto()
     # Weirdness with Northern Ruins.  There's a variable set, only for these
-    # locations indicating whether you're in the
+    # locations indicating whether you're in the 600 or 1000 version
     #   0x7F10A3 & 0x10 ->  600
     #   0x7F10A3 & 0x20 -> 1000
+    # On 0x44 Northern Ruins Antechamber
+    NORTHERN_RUINS_ANTECHAMBER_LEFT_600 = auto()
+    NORTHERN_RUINS_ANTECHAMBER_SEALED_600 = auto()
+    NORTHERN_RUINS_ANTECHAMBER_LEFT_1000 = auto()
+    NORTHERN_RUINS_ANTECHAMBER_SEALED_1000 = auto()
+    # On 0x46 Northern Ruins Back Room
+    NORTHERN_RUINS_BACK_LEFT_SEALED_600 = auto()
+    NORTHERN_RUINS_BACK_RIGHT_SEALED_600 = auto()
+    NORTHERN_RUINS_BACK_LEFT_SEALED_1000 = auto()
+    NORTHERN_RUINS_BACK_RIGHT_1000 = auto()
+    # On 0x42 Northern Ruins Basement Corridor
     NORTHERN_RUINS_BASEMENT_600 = auto()
-    NORTHERN_RUINS_UPSTAIRS_600 = auto()
-    NORTHERN_RUINS_UPSTAIRS_1000 = auto()
-    HEROS_GRAVE_1_600 = auto()
-    HEROS_GRAVE_2_600 = auto()
-    HEROS_GRAVE_3_600 = auto()
-    HEROS_GRAVE_1_1000 = auto()
-    HEROS_GRAVE_2_1000 = auto()
-    HEROS_GRAVE_3_1000 = auto()
     # Frog locked one
     NORTHERN_RUINS_BASEMENT_1000 = auto()
     GUARDIA_BASEMENT_1 = auto()
@@ -519,7 +538,7 @@ class TreasureID(StrIntEnum):
     HECKRAN_CAVE_1 = auto()
     HECKRAN_CAVE_2 = auto()
     # Taban items are weird, but the first one can be a normal ScriptTreasure
-    # The other items will need to
+    # Maybe the rest can be too!
     TABAN_KEY = auto()
     KINGS_ROOM_1000 = auto()
     QUEENS_ROOM_1000 = auto()
@@ -609,8 +628,106 @@ class TreasureID(StrIntEnum):
     MELCHIOR_KEY = auto()
     FROGS_BURROW_LEFT = auto()
     # Tabs later if they're going to be randomized
-    # GUARDIA_FOREST_POWER_TAB_600 = auto()
-    # GUARDIA_FOREST_POWER_TAB_1000 = auto()
-    # SUN_KEEP_POWER_TAB_600 = auto()
-    # MEDINA_ELDER_SPEED_TAB = auto()
-    # MEDINA_ELDER_MAGIC_TAB = auto()
+    GUARDIA_FOREST_POWER_TAB_600 = auto()
+    GUARDIA_FOREST_POWER_TAB_1000 = auto()
+    SUN_KEEP_POWER_TAB_600 = auto()
+    MEDINA_ELDER_SPEED_TAB = auto()
+    MEDINA_ELDER_MAGIC_TAB = auto()
+    # Non-Chronosanity chests:
+    GUARDIA_JAIL_FRITZ_STORAGE = auto()
+    GUARDIA_JAIL_CELL = auto()
+    GUARDIA_JAIL_OMNICRONE_1 = auto()
+    GUARDIA_JAIL_OMNICRONE_2 = auto()
+    GUARDIA_JAIL_OMNICRONE_3 = auto()
+    GUARDIA_JAIL_HOLE_1 = auto()
+    GUARDIA_JAIL_HOLE_2 = auto()
+    GUARDIA_JAIL_OUTER_WALL = auto()
+    GUARDIA_JAIL_OMNICRONE_4 = auto()
+    GUARDIA_JAIL_FRITZ = auto()
+    MAGUS_CASTLE_RIGHT_HALL = auto()
+    SUNKEN_DESERT_B1_NW = auto()
+    SUNKEN_DESERT_B1_NE = auto()
+    SUNKEN_DESERT_B1_SE = auto()
+    SUNKEN_DESERT_B1_SW = auto()
+    SUNKEN_DESERT_B2_NW = auto()
+    SUNKEN_DESERT_B2_N = auto()
+    SUNKEN_DESERT_B2_W = auto()
+    SUNKEN_DESERT_B2_SW = auto()
+    SUNKEN_DESERT_B2_SE = auto()
+    SUNKEN_DESERT_B2_E = auto()
+    SUNKEN_DESERT_B2_CENTER = auto()
+    MAGUS_CASTLE_GUILLOTINE_1 = auto()
+    MAGUS_CASTLE_GUILLOTINE_2 = auto()
+    MAGUS_CASTLE_SLASH_ROOM_1 = auto()
+    MAGUS_CASTLE_SLASH_ROOM_2 = auto()
+    MAGUS_CASTLE_STATUE_HALL = auto()
+    MAGUS_CASTLE_FOUR_KIDS = auto()
+    MAGUS_CASTLE_OZZIE_1 = auto()
+    MAGUS_CASTLE_OZZIE_2 = auto()
+    MAGUS_CASTLE_ENEMY_ELEVATOR = auto()
+    REPTITE_LAIR_SECRET_B2_NE_RIGHT = auto()
+    LAB_32_RACE_LOG = auto()
+    FACTORY_RUINS_GENERATOR = auto()
+    DEATH_PEAK_SOUTH_FACE_KRAKKER = auto()
+    DEATH_PEAK_SOUTH_FACE_SPAWN_SAVE = auto()
+    DEATH_PEAK_SOUTH_FACE_SUMMIT = auto()
+    DEATH_PEAK_FIELD = auto()
+    DEATH_PEAK_KRAKKER_PARADE = auto()
+    DEATH_PEAK_CAVES_LEFT = auto()
+    DEATH_PEAK_CAVES_CENTER = auto()
+    DEATH_PEAK_CAVES_RIGHT = auto()
+    REPTITE_LAIR_SECRET_B1_SW = auto()
+    REPTITE_LAIR_SECRET_B1_NE = auto()
+    REPTITE_LAIR_SECRET_B1_SE = auto()
+    REPTITE_LAIR_SECRET_B2_SE_RIGHT = auto()
+    REPTITE_LAIR_SECRET_B2_NE_OR_SE_LEFT = auto()
+    REPTITE_LAIR_SECRET_B2_SW = auto()
+    GIANTS_CLAW_THRONE_1 = auto()
+    GIANTS_CLAW_THRONE_2 = auto()
+    # TYRANO_LAIR_THRONE Unused
+    TYRANO_LAIR_TRAPDOOR = auto()
+    TYRANO_LAIR_KINO_CELL = auto()
+    # TYRANO_LAIR Unused? : 0xB7
+    TYRANO_LAIR_MAZE_1 = auto()
+    TYRANO_LAIR_MAZE_2 = auto()
+    TYRANO_LAIR_MAZE_3 = auto()
+    TYRANO_LAIR_MAZE_4 = auto()
+    # 0xBC - 0xCF - BLACK_OMEN
+    BLACK_OMEN_AUX_COMMAND_MID = auto()
+    BLACK_OMEN_AUX_COMMAND_NE = auto()
+    BLACK_OMEN_GRAND_HALL = auto()
+    BLACK_OMEN_NU_HALL_NW = auto()
+    BLACK_OMEN_NU_HALL_W = auto()
+    BLACK_OMEN_NU_HALL_SW = auto()
+    BLACK_OMEN_NU_HALL_NE = auto()
+    BLACK_OMEN_NU_HALL_E = auto()
+    BLACK_OMEN_NU_HALL_SE = auto()
+    BLACK_OMEN_ROYAL_PATH = auto()
+    BLACK_OMEN_RUMINATOR_PARADE = auto()
+    BLACK_OMEN_EYEBALL_HALL = auto()
+    BLACK_OMEN_TUBSTER_FLY = auto()
+    BLACK_OMEN_MARTELLO = auto()
+    BLACK_OMEN_ALIEN_SW = auto()
+    BLACK_OMEN_ALIEN_NE = auto()
+    BLACK_OMEN_ALIEN_NW = auto()
+    BLACK_OMEN_TERRA_W = auto()
+    BLACK_OMEN_TERRA_ROCK = auto()
+    BLACK_OMEN_TERRA_NE = auto()
+    OCEAN_PALACE_MAIN_S = auto()
+    OCEAN_PALACE_MAIN_N = auto()
+    OCEAN_PALACE_E_ROOM = auto()
+    OCEAN_PALACE_W_ROOM = auto()
+    OCEAN_PALACE_SWITCH_NW = auto()
+    OCEAN_PALACE_SWITCH_SW = auto()
+    OCEAN_PALACE_SWITCH_NE = auto()
+    OCEAN_PALACE_SWITCH_SECRET = auto()
+    OCEAN_PALACE_FINAL = auto()
+    # FACTORY_RUINS_UNUSED: 0xE7
+    MAGUS_CASTLE_LEFT_HALL = auto()
+    MAGUS_CASTLE_UNSKIPPABLES = auto()
+    MAGUS_CASTLE_PIT_E = auto()
+    MAGUS_CASTLE_PIT_NE = auto()
+    MAGUS_CASTLE_PIT_NW = auto()
+    MAGUS_CASTLE_PIT_W = auto()
+    # GIANTS_CLAW_MAZE Unused: 0xF7
+    # DEATH_PEAK_CLIFF Unused: 0xF8
