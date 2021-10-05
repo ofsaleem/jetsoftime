@@ -13,6 +13,10 @@ from freespace import FSWriteType  # Only for the test main() code
 
 
 # All CharRecruits are script-based
+# Parameters are self explanatory except for load_obj_id and recruit_obj_id
+# Sometimes the character sprite is located in a different object than the code
+# which actually adds the character to the team.  So the sprite's object is
+# load_obj_id and the code that adds the character is recruit_obj_id
 class CharRecruit:
 
     # Indexed by CharID, so load_cmds[CharID.Crono] is Crono's load cmd
@@ -122,7 +126,7 @@ class ChestTreasure(Treasure):
         fsrom.seek(ChestTreasure.treasure_ptr+4*self.chest_index + 2)
 
         # write two bytes to clear the gold/empty flags
-        ctrom.write(to_little_endian(self.held_item, 2))
+        ctrom.rom_data.write(to_little_endian(self.held_item, 2))
 
 
 # Treasures that are obtained by the script adding it to your inventory
@@ -140,7 +144,8 @@ class ScriptTreasure(Treasure):
         x = (
             f"{type(self).__name__}(location={self.location}, " +
             f"object_id={self.object_id}, function_id={self.function_id},  " +
-            f"held_item={self.held_item})"
+            f"held_item={self.held_item}, "
+            f"item_num={self.item_num})"
         )
         return x
 
@@ -162,8 +167,8 @@ class ScriptTreasure(Treasure):
 
         # Loop until we find exactly the right number of item display and
         # item add commands
-        while (num_add_item != self.item_num and
-               num_set_item_mem != self.item_num):
+        while (num_add_item != self.item_num+1 or
+               num_set_item_mem != self.item_num+1):
 
             pos, cmd = script.find_command(cmd_ids, pos, end)
 
@@ -183,6 +188,8 @@ class ScriptTreasure(Treasure):
             elif cmd.command == 0xCA:
                 num_add_item += 1
                 add_item_addr = pos + 1  # cmd, item
+
+            pos += len(cmd)
 
         script.data[set_item_mem_addr] = int(self.held_item)
         script.data[add_item_addr] = int(self.held_item)
@@ -611,6 +618,7 @@ class RandoConfig:
                 object_id=0x19,
                 function_id=0x01
             ),
+            # Key Items
             TID.REPTITE_LAIR_KEY: ScriptTreasure(
                 LocID.REPTITE_LAIR_AZALA_ROOM,
                 object_id=0x00,
@@ -668,6 +676,57 @@ class RandoConfig:
                 location=LocID.CAVE_OF_MASAMUNE,
                 object_id=0x0A,
                 function_id=0x2
+            ),
+            # Other Script Treasures
+            TID.TABAN_GIFT_HELM: ScriptTreasure(LocID.LUCCAS_WORKSHOP,
+                                                object_id=0x08,
+                                                function_id=0x01,
+                                                item_num=1),
+            TID.TABAN_GIFT_WEAPON: ScriptTreasure(LocID.LUCCAS_WORKSHOP,
+                                                  object_id=0x08,
+                                                  function_id=0x01,
+                                                  item_num=2),
+            TID.TRADING_POST_RANGED_WEAPON: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=0
+            ),
+            TID.TRADING_POST_ACCESSORY: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=1
+            ),
+            TID.TRADING_POST_TAB: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=2
+            ),
+            TID.TRADING_POST_MELEE_WEAPON: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=3
+            ),
+            TID.TRADING_POST_ARMOR: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=4
+            ),
+            TID.TRADING_POST_HELM: ScriptTreasure(
+                location=LocID.IOKA_TRADING_POST,
+                object_id=0x0C,
+                function_id=0x03,
+                item_num=5
+            ),
+            TID.JERKY_GIFT: ScriptTreasure(
+                location=LocID.PORRE_MAYOR_1F,
+                object_id=0x08,
+                function_id=0x01,
+                item_num=0
             ),
             # Tabs later if they're going to be randomized
             # GUARDIA_FOREST_POWER_TAB_600: auto()

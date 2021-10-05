@@ -1,273 +1,150 @@
+from __future__ import annotations
+from dataclasses import dataclass, field
 import struct as st
+from typing import ClassVar, Tuple
 import random as rand
 
 import ctenums
 from ctevent import get_compressed_event_length, get_loc_event_ptr
 
+from ctrom import CTRom
 import randoconfig as cfg
+import randosettings as rset
 
 TID = ctenums.TreasureID
 ItemID = ctenums.ItemID
 
-low_lvl_chests = [
-    TID.TRUCE_MAYOR_1F,
-    TID.TRUCE_MAYOR_2F,
-    TID.KINGS_ROOM_1000,
-    TID.QUEENS_ROOM_1000,
-    TID.FOREST_RUINS,
-    TID.PORRE_MAYOR_2F,
-    TID.TRUCE_CANYON_1,
-    TID.TRUCE_CANYON_2,
-    TID.KINGS_ROOM_600,
-    TID.QUEENS_ROOM_600,
-    TID.ROYAL_KITCHEN,
-    TID.CURSED_WOODS_1,
-    TID.CURSED_WOODS_2,
-    TID.FROGS_BURROW_RIGHT,
-    TID.FIONAS_HOUSE_1,
-    TID.FIONAS_HOUSE_2,
-    TID.QUEENS_TOWER_600,
-    TID.KINGS_TOWER_600,
-    TID.KINGS_TOWER_1000,
-    TID.QUEENS_TOWER_1000,
-    TID.GUARDIA_COURT_TOWER,
+low_lvl_chests: list[TID] = [
+    TID.TRUCE_MAYOR_1F, TID.TRUCE_MAYOR_2F, TID.KINGS_ROOM_1000,
+    TID.QUEENS_ROOM_1000, TID.FOREST_RUINS, TID.PORRE_MAYOR_2F,
+    TID.TRUCE_CANYON_1, TID.TRUCE_CANYON_2, TID.KINGS_ROOM_600,
+    TID.QUEENS_ROOM_600, TID.ROYAL_KITCHEN, TID.CURSED_WOODS_1,
+    TID.CURSED_WOODS_2, TID.FROGS_BURROW_RIGHT, TID.FIONAS_HOUSE_1,
+    TID.FIONAS_HOUSE_2, TID.QUEENS_TOWER_600, TID.KINGS_TOWER_600,
+    TID.KINGS_TOWER_1000, TID.QUEENS_TOWER_1000, TID.GUARDIA_COURT_TOWER,
 ]
 
-low_mid_lvl_chests = [
-    TID.HECKRAN_CAVE_SIDETRACK,
-    TID.HECKRAN_CAVE_ENTRANCE,
-    TID.HECKRAN_CAVE_1,
-    TID.HECKRAN_CAVE_2,
-    TID.GUARDIA_JAIL_FRITZ,
-    TID.MANORIA_CATHEDRAL_1,
-    TID.MANORIA_CATHEDRAL_2,
-    TID.MANORIA_CATHEDRAL_3,
-    TID.MANORIA_INTERIOR_1,
-    TID.MANORIA_INTERIOR_2,
-    TID.MANORIA_INTERIOR_4,
-    TID.DENADORO_MTS_SCREEN2_1,
-    TID.DENADORO_MTS_SCREEN2_2,
-    TID.DENADORO_MTS_SCREEN2_3,
-    TID.DENADORO_MTS_FINAL_1,
-    TID.DENADORO_MTS_FINAL_2,
-    TID.DENADORO_MTS_FINAL_3,
-    TID.DENADORO_MTS_WATERFALL_TOP_3,
-    TID.DENADORO_MTS_WATERFALL_TOP_4,
-    TID.DENADORO_MTS_WATERFALL_TOP_5,
-    TID.DENADORO_MTS_ENTRANCE_1,
-    TID.DENADORO_MTS_ENTRANCE_2,
-    TID.DENADORO_MTS_SCREEN3_1,
-    TID.DENADORO_MTS_SCREEN3_2,
-    TID.DENADORO_MTS_SCREEN3_3,
-    TID.DENADORO_MTS_SCREEN3_4,
-    TID.DENADORO_MTS_AMBUSH,
-    TID.DENADORO_MTS_SAVE_PT,
-    TID.YAKRAS_ROOM,
-    TID.MANORIA_SHRINE_SIDEROOM_1,
-    TID.MANORIA_SHRINE_SIDEROOM_2,
-    TID.MANORIA_BROMIDE_1,
-    TID.MANORIA_BROMIDE_2,
-    TID.MANORIA_BROMIDE_3,
-    TID.MANORIA_SHRINE_MAGUS_1,
+low_mid_lvl_chests: list[TID] = [
+    TID.HECKRAN_CAVE_SIDETRACK, TID.HECKRAN_CAVE_ENTRANCE,
+    TID.HECKRAN_CAVE_1, TID.HECKRAN_CAVE_2, TID.GUARDIA_JAIL_FRITZ,
+    TID.MANORIA_CATHEDRAL_1, TID.MANORIA_CATHEDRAL_2, TID.MANORIA_CATHEDRAL_3,
+    TID.MANORIA_INTERIOR_1, TID.MANORIA_INTERIOR_2, TID.MANORIA_INTERIOR_4,
+    TID.DENADORO_MTS_SCREEN2_1, TID.DENADORO_MTS_SCREEN2_2,
+    TID.DENADORO_MTS_SCREEN2_3, TID.DENADORO_MTS_FINAL_1,
+    TID.DENADORO_MTS_FINAL_2, TID.DENADORO_MTS_FINAL_3,
+    TID.DENADORO_MTS_WATERFALL_TOP_3, TID.DENADORO_MTS_WATERFALL_TOP_4,
+    TID.DENADORO_MTS_WATERFALL_TOP_5, TID.DENADORO_MTS_ENTRANCE_1,
+    TID.DENADORO_MTS_ENTRANCE_2, TID.DENADORO_MTS_SCREEN3_1,
+    TID.DENADORO_MTS_SCREEN3_2, TID.DENADORO_MTS_SCREEN3_3,
+    TID.DENADORO_MTS_SCREEN3_4, TID.DENADORO_MTS_AMBUSH,
+    TID.DENADORO_MTS_SAVE_PT, TID.YAKRAS_ROOM,
+    TID.MANORIA_SHRINE_SIDEROOM_1, TID.MANORIA_SHRINE_SIDEROOM_2,
+    TID.MANORIA_BROMIDE_1, TID.MANORIA_BROMIDE_2,
+    TID.MANORIA_BROMIDE_3, TID.MANORIA_SHRINE_MAGUS_1,
     TID.MANORIA_SHRINE_MAGUS_2,
 ]
 
-mid_lvl_chests = [
-    TID.GUARDIA_JAIL_FRITZ_STORAGE,
-    TID.GUARDIA_JAIL_CELL,
-    TID.GUARDIA_JAIL_OMNICRONE_1,
-    TID.GUARDIA_JAIL_OMNICRONE_2,
-    TID.GUARDIA_JAIL_OMNICRONE_3,
-    TID.GUARDIA_JAIL_HOLE_1,
-    TID.GUARDIA_JAIL_HOLE_2,
-    TID.GUARDIA_JAIL_OUTER_WALL,
-    TID.GUARDIA_JAIL_OMNICRONE_4,
-    TID.GIANTS_CLAW_KINO_CELL,
-    TID.GIANTS_CLAW_TRAPS,
-    TID.MANORIA_INTERIOR_3,
-    TID.DENADORO_MTS_WATERFALL_TOP_1,
-    TID.DENADORO_MTS_WATERFALL_TOP_2,
-    TID.SUNKEN_DESERT_B1_NW,
-    TID.SUNKEN_DESERT_B1_NE,
-    TID.SUNKEN_DESERT_B1_SE,
-    TID.SUNKEN_DESERT_B1_SW,
-    TID.SUNKEN_DESERT_B2_NW,
-    TID.SUNKEN_DESERT_B2_N,
-    TID.SUNKEN_DESERT_B2_W,
-    TID.SUNKEN_DESERT_B2_SW,
-    TID.SUNKEN_DESERT_B2_SE,
-    TID.SUNKEN_DESERT_B2_E,
-    TID.SUNKEN_DESERT_B2_CENTER,
-    TID.OZZIES_FORT_GUILLOTINES_1,
-    TID.OZZIES_FORT_GUILLOTINES_2,
-    TID.OZZIES_FORT_GUILLOTINES_3,
-    TID.OZZIES_FORT_GUILLOTINES_4,
-    TID.OZZIES_FORT_FINAL_1,
-    TID.OZZIES_FORT_FINAL_2,
-    TID.GIANTS_CLAW_CAVES_1,
-    TID.GIANTS_CLAW_CAVES_2,
-    TID.GIANTS_CLAW_CAVES_3,
-    TID.GIANTS_CLAW_CAVES_4,
-    TID.GIANTS_CLAW_CAVES_5,
-    TID.MYSTIC_MT_STREAM,
-    TID.FOREST_MAZE_1,
-    TID.FOREST_MAZE_2,
-    TID.FOREST_MAZE_3,
-    TID.FOREST_MAZE_4,
-    TID.FOREST_MAZE_5,
-    TID.FOREST_MAZE_6,
-    TID.FOREST_MAZE_7,
-    TID.FOREST_MAZE_8,
-    TID.FOREST_MAZE_9,
-    TID.REPTITE_LAIR_REPTITES_1,
-    TID.REPTITE_LAIR_REPTITES_2,
-    TID.DACTYL_NEST_1,
-    TID.DACTYL_NEST_2,
-    TID.DACTYL_NEST_3,
-    TID.GIANTS_CLAW_THRONE_1,
-    TID.GIANTS_CLAW_THRONE_2,
-    TID.TYRANO_LAIR_KINO_CELL,
-    TID.ARRIS_DOME_FOOD_STORE,
+mid_lvl_chests: list[TID] = [
+    TID.GUARDIA_JAIL_FRITZ_STORAGE, TID.GUARDIA_JAIL_CELL,
+    TID.GUARDIA_JAIL_OMNICRONE_1, TID.GUARDIA_JAIL_OMNICRONE_2,
+    TID.GUARDIA_JAIL_OMNICRONE_3, TID.GUARDIA_JAIL_HOLE_1,
+    TID.GUARDIA_JAIL_HOLE_2, TID.GUARDIA_JAIL_OUTER_WALL,
+    TID.GUARDIA_JAIL_OMNICRONE_4, TID.GIANTS_CLAW_KINO_CELL,
+    TID.GIANTS_CLAW_TRAPS, TID.MANORIA_INTERIOR_3,
+    TID.DENADORO_MTS_WATERFALL_TOP_1, TID.DENADORO_MTS_WATERFALL_TOP_2,
+    TID.SUNKEN_DESERT_B1_NW, TID.SUNKEN_DESERT_B1_NE,
+    TID.SUNKEN_DESERT_B1_SE, TID.SUNKEN_DESERT_B1_SW,
+    TID.SUNKEN_DESERT_B2_NW, TID.SUNKEN_DESERT_B2_N,
+    TID.SUNKEN_DESERT_B2_W,  TID.SUNKEN_DESERT_B2_SW,
+    TID.SUNKEN_DESERT_B2_SE, TID.SUNKEN_DESERT_B2_E,
+    TID.SUNKEN_DESERT_B2_CENTER, TID.OZZIES_FORT_GUILLOTINES_1,
+    TID.OZZIES_FORT_GUILLOTINES_2, TID.OZZIES_FORT_GUILLOTINES_3,
+    TID.OZZIES_FORT_GUILLOTINES_4, TID.OZZIES_FORT_FINAL_1,
+    TID.OZZIES_FORT_FINAL_2, TID.GIANTS_CLAW_CAVES_1,
+    TID.GIANTS_CLAW_CAVES_2, TID.GIANTS_CLAW_CAVES_3,
+    TID.GIANTS_CLAW_CAVES_4, TID.GIANTS_CLAW_CAVES_5,
+    TID.MYSTIC_MT_STREAM, TID.FOREST_MAZE_1,
+    TID.FOREST_MAZE_2, TID.FOREST_MAZE_3, TID.FOREST_MAZE_4,
+    TID.FOREST_MAZE_5, TID.FOREST_MAZE_6, TID.FOREST_MAZE_7,
+    TID.FOREST_MAZE_8, TID.FOREST_MAZE_9,
+    TID.REPTITE_LAIR_REPTITES_1, TID.REPTITE_LAIR_REPTITES_2,
+    TID.DACTYL_NEST_1, TID.DACTYL_NEST_2, TID.DACTYL_NEST_3,
+    TID.GIANTS_CLAW_THRONE_1, TID.GIANTS_CLAW_THRONE_2,
+    TID.TYRANO_LAIR_KINO_CELL, TID.ARRIS_DOME_FOOD_STORE,
     TID.PRISON_TOWER_1000,
 ]
 
 # This is wrong because the original def has overlaps.
 # Original had some overlap with lower tiers.  Now removed.
 mid_high_lvl_chests = [
-    TID.GUARDIA_BASEMENT_1,
-    TID.GUARDIA_BASEMENT_2,
-    TID.GUARDIA_BASEMENT_3,
-    TID.MAGUS_CASTLE_RIGHT_HALL,
-    TID.MAGUS_CASTLE_GUILLOTINE_1,
-    TID.MAGUS_CASTLE_GUILLOTINE_2,
-    TID.MAGUS_CASTLE_SLASH_ROOM_1,
-    TID.MAGUS_CASTLE_SLASH_ROOM_2,
-    TID.MAGUS_CASTLE_STATUE_HALL,
-    TID.MAGUS_CASTLE_FOUR_KIDS,
-    TID.MAGUS_CASTLE_OZZIE_1,
-    TID.MAGUS_CASTLE_OZZIE_2,
-    TID.MAGUS_CASTLE_ENEMY_ELEVATOR,
-    TID.BANGOR_DOME_SEAL_1,
-    TID.BANGOR_DOME_SEAL_2,
-    TID.BANGOR_DOME_SEAL_3,
-    TID.TRANN_DOME_SEAL_1,
-    TID.TRANN_DOME_SEAL_2,
-    TID.LAB_16_1,
-    TID.LAB_16_2,
-    TID.LAB_16_3,
-    TID.LAB_16_4,
-    TID.ARRIS_DOME_RATS,
-    TID.LAB_32_1,
-    TID.FACTORY_LEFT_AUX_CONSOLE,
-    TID.FACTORY_LEFT_SECURITY_RIGHT,
-    TID.FACTORY_LEFT_SECURITY_LEFT,
-    TID.FACTORY_RIGHT_FLOOR_TOP,
-    TID.FACTORY_RIGHT_FLOOR_LEFT,
-    TID.FACTORY_RIGHT_FLOOR_BOTTOM,
-    TID.FACTORY_RIGHT_FLOOR_SECRET,
-    TID.FACTORY_RIGHT_CRANE_LOWER,
-    TID.FACTORY_RIGHT_CRANE_UPPER,
-    TID.FACTORY_RIGHT_INFO_ARCHIVE,
-    TID.FACTORY_RUINS_GENERATOR,
-    TID.SEWERS_1,
-    TID.SEWERS_2,
-    TID.SEWERS_3,
-    TID.DEATH_PEAK_SOUTH_FACE_KRAKKER,
-    TID.DEATH_PEAK_SOUTH_FACE_SPAWN_SAVE,
-    TID.DEATH_PEAK_SOUTH_FACE_SUMMIT,
-    TID.DEATH_PEAK_FIELD,
-    TID.GENO_DOME_1F_1,
-    TID.GENO_DOME_1F_2,
-    TID.GENO_DOME_1F_3,
-    TID.GENO_DOME_1F_4,
-    TID.GENO_DOME_ROOM_1,
-    TID.GENO_DOME_ROOM_2,
-    TID.GENO_DOME_PROTO4_1,
-    TID.GENO_DOME_PROTO4_2,
-    TID.FACTORY_RIGHT_DATA_CORE_1,
-    TID.FACTORY_RIGHT_DATA_CORE_2,
-    TID.DEATH_PEAK_KRAKKER_PARADE,
-    TID.DEATH_PEAK_CAVES_LEFT,
-    TID.DEATH_PEAK_CAVES_CENTER,
-    TID.DEATH_PEAK_CAVES_RIGHT,
-    TID.GENO_DOME_2F_1,
-    TID.GENO_DOME_2F_2,
-    TID.GENO_DOME_2F_3,
-    TID.GENO_DOME_2F_4,
-    TID.TYRANO_LAIR_TRAPDOOR,
-    TID.TYRANO_LAIR_MAZE_1,
-    TID.TYRANO_LAIR_MAZE_2,
-    TID.TYRANO_LAIR_MAZE_3,
-    TID.TYRANO_LAIR_MAZE_4,
-    TID.OCEAN_PALACE_MAIN_S,
-    TID.OCEAN_PALACE_MAIN_N,
-    TID.OCEAN_PALACE_E_ROOM,
-    TID.OCEAN_PALACE_W_ROOM,
-    TID.OCEAN_PALACE_SWITCH_NW,
-    TID.OCEAN_PALACE_SWITCH_SW,
-    TID.OCEAN_PALACE_SWITCH_NE,
-    TID.GUARDIA_TREASURY_1,
-    TID.GUARDIA_TREASURY_2,
-    TID.GUARDIA_TREASURY_3,
-    TID.MAGUS_CASTLE_LEFT_HALL,
-    TID.MAGUS_CASTLE_UNSKIPPABLES,
-    TID.MAGUS_CASTLE_PIT_E,
-    TID.MAGUS_CASTLE_PIT_NE,
-    TID.MAGUS_CASTLE_PIT_NW,
+    TID.GUARDIA_BASEMENT_1, TID.GUARDIA_BASEMENT_2, TID.GUARDIA_BASEMENT_3,
+    TID.MAGUS_CASTLE_RIGHT_HALL, TID.MAGUS_CASTLE_GUILLOTINE_1,
+    TID.MAGUS_CASTLE_GUILLOTINE_2, TID.MAGUS_CASTLE_SLASH_ROOM_1,
+    TID.MAGUS_CASTLE_SLASH_ROOM_2, TID.MAGUS_CASTLE_STATUE_HALL,
+    TID.MAGUS_CASTLE_FOUR_KIDS, TID.MAGUS_CASTLE_OZZIE_1,
+    TID.MAGUS_CASTLE_OZZIE_2, TID.MAGUS_CASTLE_ENEMY_ELEVATOR,
+    TID.BANGOR_DOME_SEAL_1, TID.BANGOR_DOME_SEAL_2, TID.BANGOR_DOME_SEAL_3,
+    TID.TRANN_DOME_SEAL_1, TID.TRANN_DOME_SEAL_2,
+    TID.LAB_16_1, TID.LAB_16_2, TID.LAB_16_3, TID.LAB_16_4,
+    TID.ARRIS_DOME_RATS, TID.LAB_32_1,
+    TID.FACTORY_LEFT_AUX_CONSOLE, TID.FACTORY_LEFT_SECURITY_RIGHT,
+    TID.FACTORY_LEFT_SECURITY_LEFT, TID.FACTORY_RIGHT_FLOOR_TOP,
+    TID.FACTORY_RIGHT_FLOOR_LEFT, TID.FACTORY_RIGHT_FLOOR_BOTTOM,
+    TID.FACTORY_RIGHT_FLOOR_SECRET, TID.FACTORY_RIGHT_CRANE_LOWER,
+    TID.FACTORY_RIGHT_CRANE_UPPER, TID.FACTORY_RIGHT_INFO_ARCHIVE,
+    TID.FACTORY_RUINS_GENERATOR, TID.SEWERS_1,
+    TID.SEWERS_2, TID.SEWERS_3, TID.DEATH_PEAK_SOUTH_FACE_KRAKKER,
+    TID.DEATH_PEAK_SOUTH_FACE_SPAWN_SAVE, TID.DEATH_PEAK_SOUTH_FACE_SUMMIT,
+    TID.DEATH_PEAK_FIELD, TID.GENO_DOME_1F_1,
+    TID.GENO_DOME_1F_2, TID.GENO_DOME_1F_3, TID.GENO_DOME_1F_4,
+    TID.GENO_DOME_ROOM_1, TID.GENO_DOME_ROOM_2, TID.GENO_DOME_PROTO4_1,
+    TID.GENO_DOME_PROTO4_2, TID.FACTORY_RIGHT_DATA_CORE_1,
+    TID.FACTORY_RIGHT_DATA_CORE_2, TID.DEATH_PEAK_KRAKKER_PARADE,
+    TID.DEATH_PEAK_CAVES_LEFT, TID.DEATH_PEAK_CAVES_CENTER,
+    TID.DEATH_PEAK_CAVES_RIGHT, TID.GENO_DOME_2F_1,
+    TID.GENO_DOME_2F_2, TID.GENO_DOME_2F_3, TID.GENO_DOME_2F_4,
+    TID.TYRANO_LAIR_TRAPDOOR, TID.TYRANO_LAIR_MAZE_1,
+    TID.TYRANO_LAIR_MAZE_2, TID.TYRANO_LAIR_MAZE_3,
+    TID.TYRANO_LAIR_MAZE_4, TID.OCEAN_PALACE_MAIN_S,
+    TID.OCEAN_PALACE_MAIN_N, TID.OCEAN_PALACE_E_ROOM,
+    TID.OCEAN_PALACE_W_ROOM, TID.OCEAN_PALACE_SWITCH_NW,
+    TID.OCEAN_PALACE_SWITCH_SW, TID.OCEAN_PALACE_SWITCH_NE,
+    TID.GUARDIA_TREASURY_1, TID.GUARDIA_TREASURY_2, TID.GUARDIA_TREASURY_3,
+    TID.MAGUS_CASTLE_LEFT_HALL, TID.MAGUS_CASTLE_UNSKIPPABLES,
+    TID.MAGUS_CASTLE_PIT_E, TID.MAGUS_CASTLE_PIT_NE, TID.MAGUS_CASTLE_PIT_NW,
     TID.MAGUS_CASTLE_PIT_W,
     # FACTORY_RUINS_UNUSED: 0xE7
 ]
 
-high_awesome_lvl_chests = [
-    TID.ARRIS_DOME_SEAL_1,
-    TID.ARRIS_DOME_SEAL_2,
-    TID.ARRIS_DOME_SEAL_3,
-    TID.ARRIS_DOME_SEAL_4,
-    TID.REPTITE_LAIR_SECRET_B2_NE_RIGHT,
-    TID.REPTITE_LAIR_SECRET_B1_SW,
-    TID.REPTITE_LAIR_SECRET_B1_NE,
-    TID.REPTITE_LAIR_SECRET_B1_SE,
+high_awesome_lvl_chests: list[TID] = [
+    TID.ARRIS_DOME_SEAL_1, TID.ARRIS_DOME_SEAL_2,
+    TID.ARRIS_DOME_SEAL_3, TID.ARRIS_DOME_SEAL_4,
+    TID.REPTITE_LAIR_SECRET_B2_NE_RIGHT, TID.REPTITE_LAIR_SECRET_B1_SW,
+    TID.REPTITE_LAIR_SECRET_B1_NE, TID.REPTITE_LAIR_SECRET_B1_SE,
     TID.REPTITE_LAIR_SECRET_B2_SE_RIGHT,
     TID.REPTITE_LAIR_SECRET_B2_NE_OR_SE_LEFT,
-    TID.REPTITE_LAIR_SECRET_B2_SW,
-    TID.BLACK_OMEN_AUX_COMMAND_MID,
-    TID.BLACK_OMEN_AUX_COMMAND_NE,
-    TID.BLACK_OMEN_GRAND_HALL,
-    TID.BLACK_OMEN_NU_HALL_NW,
-    TID.BLACK_OMEN_NU_HALL_W,
-    TID.BLACK_OMEN_NU_HALL_SW,
-    TID.BLACK_OMEN_NU_HALL_NE,
-    TID.BLACK_OMEN_NU_HALL_E,
-    TID.BLACK_OMEN_NU_HALL_SE,
-    TID.BLACK_OMEN_ROYAL_PATH,
-    TID.BLACK_OMEN_RUMINATOR_PARADE,
-    TID.BLACK_OMEN_EYEBALL_HALL,
-    TID.BLACK_OMEN_TUBSTER_FLY,
-    TID.BLACK_OMEN_MARTELLO,
-    TID.BLACK_OMEN_ALIEN_SW,
-    TID.BLACK_OMEN_ALIEN_NE,
-    TID.BLACK_OMEN_ALIEN_NW,
-    TID.BLACK_OMEN_TERRA_W,
-    TID.BLACK_OMEN_TERRA_NE,
-    TID.MT_WOE_2ND_SCREEN_1,
-    TID.MT_WOE_2ND_SCREEN_2,
-    TID.MT_WOE_2ND_SCREEN_3,
-    TID.MT_WOE_2ND_SCREEN_4,
-    TID.MT_WOE_2ND_SCREEN_5,
-    TID.MT_WOE_3RD_SCREEN_1,
-    TID.MT_WOE_3RD_SCREEN_2,
-    TID.MT_WOE_3RD_SCREEN_3,
-    TID.MT_WOE_3RD_SCREEN_4,
-    TID.MT_WOE_3RD_SCREEN_5,
-    TID.MT_WOE_1ST_SCREEN,
-    TID.MT_WOE_FINAL_1,
-    TID.MT_WOE_FINAL_2,
-    TID.OCEAN_PALACE_SWITCH_SECRET,
+    TID.REPTITE_LAIR_SECRET_B2_SW, TID.BLACK_OMEN_AUX_COMMAND_MID,
+    TID.BLACK_OMEN_AUX_COMMAND_NE, TID.BLACK_OMEN_GRAND_HALL,
+    TID.BLACK_OMEN_NU_HALL_NW, TID.BLACK_OMEN_NU_HALL_W,
+    TID.BLACK_OMEN_NU_HALL_SW, TID.BLACK_OMEN_NU_HALL_NE,
+    TID.BLACK_OMEN_NU_HALL_E, TID.BLACK_OMEN_NU_HALL_SE,
+    TID.BLACK_OMEN_ROYAL_PATH, TID.BLACK_OMEN_RUMINATOR_PARADE,
+    TID.BLACK_OMEN_EYEBALL_HALL, TID.BLACK_OMEN_TUBSTER_FLY,
+    TID.BLACK_OMEN_MARTELLO, TID.BLACK_OMEN_ALIEN_SW,
+    TID.BLACK_OMEN_ALIEN_NE, TID.BLACK_OMEN_ALIEN_NW,
+    TID.BLACK_OMEN_TERRA_W, TID.BLACK_OMEN_TERRA_NE,
+    TID.MT_WOE_2ND_SCREEN_1, TID.MT_WOE_2ND_SCREEN_2,
+    TID.MT_WOE_2ND_SCREEN_3, TID.MT_WOE_2ND_SCREEN_4,
+    TID.MT_WOE_2ND_SCREEN_5, TID.MT_WOE_3RD_SCREEN_1,
+    TID.MT_WOE_3RD_SCREEN_2, TID.MT_WOE_3RD_SCREEN_3,
+    TID.MT_WOE_3RD_SCREEN_4, TID.MT_WOE_3RD_SCREEN_5,
+    TID.MT_WOE_1ST_SCREEN, TID.MT_WOE_FINAL_1,
+    TID.MT_WOE_FINAL_2, TID.OCEAN_PALACE_SWITCH_SECRET,
     TID.OCEAN_PALACE_FINAL,
 ]
 
 # Sealed chests include some script chests from Northern Ruins
-sealed_chests = [
+sealed_chests: list[TID] = [
     TID.NORTHERN_RUINS_ANTECHAMBER_LEFT_600,
     TID.NORTHERN_RUINS_ANTECHAMBER_SEALED_600,
     TID.NORTHERN_RUINS_ANTECHAMBER_LEFT_1000,
@@ -278,328 +155,161 @@ sealed_chests = [
     TID.NORTHERN_RUINS_BACK_RIGHT_SEALED_1000,
     TID.NORTHERN_RUINS_BASEMENT_600,
     TID.NORTHERN_RUINS_BASEMENT_1000,
-    TID.TRUCE_INN_SEALED_600,
-    TID.TRUCE_INN_SEALED_1000,
-    TID.PORRE_ELDER_SEALED_1,
-    TID.PORRE_ELDER_SEALED_2,
-    TID.PORRE_MAYOR_SEALED_1,
-    TID.PORRE_MAYOR_SEALED_2,
-    TID.GUARDIA_CASTLE_SEALED_600,
-    TID.GUARDIA_CASTLE_SEALED_1000,
-    TID.GUARDIA_FOREST_SEALED_600,
-    TID.GUARDIA_FOREST_SEALED_1000,
-    TID.HECKRAN_SEALED_1,
-    TID.HECKRAN_SEALED_2,
-    TID.PYRAMID_LEFT,
-    TID.PYRAMID_RIGHT,
+    TID.TRUCE_INN_SEALED_600, TID.TRUCE_INN_SEALED_1000,
+    TID.PORRE_ELDER_SEALED_1, TID.PORRE_ELDER_SEALED_2,
+    TID.PORRE_MAYOR_SEALED_1, TID.PORRE_MAYOR_SEALED_2,
+    TID.GUARDIA_CASTLE_SEALED_600, TID.GUARDIA_CASTLE_SEALED_1000,
+    TID.GUARDIA_FOREST_SEALED_600, TID.GUARDIA_FOREST_SEALED_1000,
+    TID.HECKRAN_SEALED_1, TID.HECKRAN_SEALED_2,
+    TID.PYRAMID_LEFT, TID.PYRAMID_RIGHT,
     TID.MAGIC_CAVE_SEALED,
 ]
 
 low_lvl_items = [
-    ItemID.BANDANA,
-    ItemID.DEFENDER,
-    ItemID.MAGICSCARF,
-    ItemID.POWERGLOVE,
-    ItemID.RIBBON,
-    ItemID.SIGHTSCOPE,
-    ItemID.IRON_BLADE,
-    ItemID.STEELSABER,
-    ItemID.IRON_BOW,
-    ItemID.LODE_BOW,
-    ItemID.DART_GUN,
-    ItemID.AUTO_GUN,
-    ItemID.HAMMER_ARM,
-    ItemID.MIRAGEHAND,
-    ItemID.IRON_SWORD,
-    ItemID.IRON_HELM,
-    ItemID.BERET,
-    ItemID.GOLD_HELM,
-    ItemID.KARATE_GI,
-    ItemID.BRONZEMAIL,
-    ItemID.MAIDENSUIT,
-    ItemID.IRON_SUIT,
-    ItemID.TITAN_VEST,
-    ItemID.GOLD_SUIT,
+    ItemID.BANDANA, ItemID.DEFENDER, ItemID.MAGICSCARF, ItemID.POWERGLOVE,
+    ItemID.RIBBON, ItemID.SIGHTSCOPE, ItemID.IRON_BLADE, ItemID.STEELSABER,
+    ItemID.IRON_BOW, ItemID.LODE_BOW, ItemID.DART_GUN, ItemID.AUTO_GUN,
+    ItemID.HAMMER_ARM, ItemID.MIRAGEHAND, ItemID.IRON_SWORD, ItemID.IRON_HELM,
+    ItemID.BERET, ItemID.GOLD_HELM, ItemID.KARATE_GI, ItemID.BRONZEMAIL,
+    ItemID.MAIDENSUIT, ItemID.IRON_SUIT, ItemID.TITAN_VEST, ItemID.GOLD_SUIT,
 ]
 
 low_lvl_consumables = [
-    ItemID.TONIC,
-    ItemID.MID_TONIC,
-    ItemID.HEAL,
-    ItemID.REVIVE,
-    ItemID.SHELTER,
-    ItemID.POWER_MEAL,
+    ItemID.TONIC, ItemID.MID_TONIC, ItemID.HEAL, ItemID.REVIVE,
+    ItemID.SHELTER, ItemID.POWER_MEAL,
 ]
 
 passable_lvl_items = [
-    ItemID.BERSERKER,
-    ItemID.RAGE_BAND,
-    ItemID.HIT_RING,
-    ItemID.MUSCLERING,
-    ItemID.POWERSCARF,
-    ItemID.LODE_SWORD,
-    ItemID.RED_KATANA,
-    ItemID.BOLT_SWORD,
-    ItemID.SERAPHSONG,
-    ItemID.ROBIN_BOW,
-    ItemID.PICOMAGNUM,
-    ItemID.PLASMA_GUN,
-    ItemID.STONE_ARM,
-    ItemID.ROCK_HELM,
-    ItemID.CERATOPPER,
-    ItemID.RUBY_VEST,
-    ItemID.DARK_MAIL,
-    ItemID.MIST_ROBE,
-    ItemID.MESO_MAIL,
+    ItemID.BERSERKER, ItemID.RAGE_BAND, ItemID.HIT_RING, ItemID.MUSCLERING,
+    ItemID.POWERSCARF, ItemID.LODE_SWORD, ItemID.RED_KATANA, ItemID.BOLT_SWORD,
+    ItemID.SERAPHSONG, ItemID.ROBIN_BOW, ItemID.PICOMAGNUM, ItemID.PLASMA_GUN,
+    ItemID.STONE_ARM, ItemID.ROCK_HELM, ItemID.CERATOPPER, ItemID.RUBY_VEST,
+    ItemID.DARK_MAIL, ItemID.MIST_ROBE, ItemID.MESO_MAIL,
 ]
 
-passable_lvl_consumables = [
-    ItemID.MID_TONIC,
-    ItemID.ETHER,
-]
+passable_lvl_consumables = [ItemID.MID_TONIC, ItemID.ETHER]
 
 mid_lvl_items = [
-    ItemID.THIRD_EYE,
-    ItemID.WALLET,
-    ItemID.SILVERERNG,
-    ItemID.FRENZYBAND,
-    ItemID.POWER_RING,
-    ItemID.MAGIC_RING,
-    ItemID.WALL_RING,
-    ItemID.FLINT_EDGE,
-    ItemID.DARK_SABER,
-    ItemID.AEON_BLADE,
-    ItemID.SAGE_BOW,
-    ItemID.DREAM_BOW,
-    ItemID.RUBY_GUN,
-    ItemID.DREAM_GUN,
-    ItemID.DOOMFINGER,
-    ItemID.MAGMA_HAND,
-    ItemID.MEGATONARM,
-    ItemID.FLASHBLADE,
-    ItemID.PEARL_EDGE,
-    ItemID.HURRICANE,
-    ItemID.GLOW_HELM,
-    ItemID.LODE_HELM,
-    ItemID.TABAN_HELM,
-    ItemID.LUMIN_ROBE,
-    ItemID.FLASH_MAIL,
-    ItemID.WHITE_VEST,
-    ItemID.BLACK_VEST,
-    ItemID.BLUE_VEST,
-    ItemID.RED_VEST,
-    ItemID.TABAN_VEST,
+    ItemID.THIRD_EYE, ItemID.WALLET, ItemID.SILVERERNG, ItemID.FRENZYBAND,
+    ItemID.POWER_RING, ItemID.MAGIC_RING, ItemID.WALL_RING, ItemID.FLINT_EDGE,
+    ItemID.DARK_SABER, ItemID.AEON_BLADE, ItemID.SAGE_BOW, ItemID.DREAM_BOW,
+    ItemID.RUBY_GUN, ItemID.DREAM_GUN, ItemID.DOOMFINGER, ItemID.MAGMA_HAND,
+    ItemID.MEGATONARM, ItemID.FLASHBLADE, ItemID.PEARL_EDGE, ItemID.HURRICANE,
+    ItemID.GLOW_HELM, ItemID.LODE_HELM, ItemID.TABAN_HELM, ItemID.LUMIN_ROBE,
+    ItemID.FLASH_MAIL, ItemID.WHITE_VEST, ItemID.BLACK_VEST, ItemID.BLUE_VEST,
+    ItemID.RED_VEST, ItemID.TABAN_VEST,
 ]
 
 mid_lvl_consumables = [
-    ItemID.FULL_TONIC,
-    ItemID.MID_ETHER,
-    ItemID.LAPIS,
-    ItemID.BARRIER,
+    ItemID.FULL_TONIC, ItemID.MID_ETHER, ItemID.LAPIS, ItemID.BARRIER,
     ItemID.SHIELD,
 ]
 
 good_lvl_items = [
-    ItemID.SPEED_BELT,
-    ItemID.FLEA_VEST,
-    ItemID.MAGIC_SEAL,
-    ItemID.POWER_SEAL,
-    ItemID.GOLD_ERNG,
-    ItemID.SILVERSTUD,
-    ItemID.GREENDREAM,
-    ItemID.DEMON_EDGE,
-    ItemID.ALLOYBLADE,
-    ItemID.SLASHER,
-    ItemID.COMETARROW,
-    ItemID.SONICARROW,
-    ItemID.MEGABLAST,
-    ItemID.GRAEDUS,
-    ItemID.BIG_HAND,
-    ItemID.KAISER_ARM,
-    ItemID.RUNE_BLADE,
-    ItemID.DEMON_HIT,
-    ItemID.STARSCYTHE,
-    ItemID.AEON_HELM,
-    ItemID.DARK_HELM,
-    ItemID.RBOW_HELM,
-    ItemID.MERMAIDCAP,
-    ItemID.LODE_VEST,
-    ItemID.AEON_SUIT,
-    ItemID.WHITE_MAIL,
-    ItemID.BLACK_MAIL,
-    ItemID.BLUE_MAIL,
+    ItemID.SPEED_BELT, ItemID.FLEA_VEST, ItemID.MAGIC_SEAL, ItemID.POWER_SEAL,
+    ItemID.GOLD_ERNG, ItemID.SILVERSTUD, ItemID.GREENDREAM, ItemID.DEMON_EDGE,
+    ItemID.ALLOYBLADE, ItemID.SLASHER, ItemID.COMETARROW, ItemID.SONICARROW,
+    ItemID.MEGABLAST, ItemID.GRAEDUS, ItemID.BIG_HAND, ItemID.KAISER_ARM,
+    ItemID.RUNE_BLADE, ItemID.DEMON_HIT, ItemID.STARSCYTHE, ItemID.AEON_HELM,
+    ItemID.DARK_HELM, ItemID.RBOW_HELM, ItemID.MERMAIDCAP, ItemID.LODE_VEST,
+    ItemID.AEON_SUIT, ItemID.WHITE_MAIL, ItemID.BLACK_MAIL, ItemID.BLUE_MAIL,
     ItemID.RED_MAIL,
 ]
 
 good_lvl_consumables = [
-    ItemID.FULL_TONIC,
-    ItemID.FULL_ETHER,
-    ItemID.HYPERETHER,
+    ItemID.FULL_TONIC, ItemID.FULL_ETHER, ItemID.HYPERETHER,
 ]
 
 high_lvl_items = [
-    ItemID.AMULET,
-    ItemID.DASH_RING,
-    ItemID.GOLD_STUD,
-    ItemID.SUN_SHADES,
-    ItemID.STAR_SWORD,
-    ItemID.VEDICBLADE,
-    ItemID.KALI_BLADE,
-    ItemID.VALKERYE,
-    ItemID.SIREN,
-    ItemID.SHOCK_WAVE,
-    ItemID.GIGA_ARM,
-    ItemID.TERRA_ARM,
-    ItemID.BRAVESWORD,
-    ItemID.DOOMSICKLE,
-    ItemID.GLOOM_HELM,
-    ItemID.SAFE_HELM,
-    ItemID.SIGHT_CAP,
-    ItemID.MEMORY_CAP,
-    ItemID.TIME_HAT,
-    ItemID.ZODIACCAPE,
-    ItemID.RUBY_ARMOR,
-    ItemID.GLOOM_CAPE,
+    ItemID.AMULET, ItemID.DASH_RING, ItemID.GOLD_STUD, ItemID.SUN_SHADES,
+    ItemID.STAR_SWORD, ItemID.VEDICBLADE, ItemID.KALI_BLADE, ItemID.VALKERYE,
+    ItemID.SIREN, ItemID.SHOCK_WAVE, ItemID.GIGA_ARM, ItemID.TERRA_ARM,
+    ItemID.BRAVESWORD, ItemID.DOOMSICKLE, ItemID.GLOOM_HELM, ItemID.SAFE_HELM,
+    ItemID.SIGHT_CAP, ItemID.MEMORY_CAP, ItemID.TIME_HAT, ItemID.ZODIACCAPE,
+    ItemID.RUBY_ARMOR, ItemID.GLOOM_CAPE,
 ]
 
-high_lvl_consumables = [
-    ItemID.ELIXIR,
-    ItemID.HYPERETHER,
-    ItemID.POWER_TAB,
-    ItemID.MAGIC_TAB,
+high_lvl_consumables: list[ItemID] = [
+    ItemID.ELIXIR, ItemID.HYPERETHER, ItemID.POWER_TAB, ItemID.MAGIC_TAB,
     ItemID.SPEED_TAB,
 ]
 
 awesome_lvl_items = [
-    ItemID.PRISMSPECS,
-    ItemID.SHIVA_EDGE,
-    ItemID.SWALLOW,
-    ItemID.SLASHER_2,
-    ItemID.RAINBOW,
-    ItemID.WONDERSHOT,
-    ItemID.CRISIS_ARM,
-    ItemID.HASTE_HELM,
-    ItemID.PRISM_HELM,
-    ItemID.VIGIL_HAT,
-    ItemID.PRISMDRESS,
-    ItemID.TABAN_SUIT,
-    ItemID.MOON_ARMOR,
-    ItemID.NOVA_ARMOR,
+    ItemID.PRISMSPECS, ItemID.SHIVA_EDGE, ItemID.SWALLOW, ItemID.SLASHER_2,
+    ItemID.RAINBOW, ItemID.WONDERSHOT, ItemID.CRISIS_ARM, ItemID.HASTE_HELM,
+    ItemID.PRISM_HELM, ItemID.VIGIL_HAT, ItemID.PRISMDRESS, ItemID.TABAN_SUIT,
+    ItemID.MOON_ARMOR, ItemID.NOVA_ARMOR,
 ]
 
-awesome_lvl_consumables = [
-    ItemID.ELIXIR,
-    ItemID.MEGAELIXIR,
-]
+awesome_lvl_consumables = [ItemID.ELIXIR, ItemID.MEGAELIXIR]
 
 sealed_treasures = [
-    ItemID.THIRD_EYE,
-    ItemID.WALLET,
-    ItemID.SILVERERNG,
-    ItemID.FRENZYBAND,
-    ItemID.POWER_RING,
-    ItemID.MAGIC_RING,
-    ItemID.WALL_RING,
-    ItemID.FLINT_EDGE,
-    ItemID.DARK_SABER,
-    ItemID.AEON_BLADE,
-    ItemID.SAGE_BOW,
-    ItemID.DREAM_BOW,
-    ItemID.RUBY_GUN,
-    ItemID.DREAM_GUN,
-    ItemID.DOOMFINGER,
-    ItemID.MAGMA_HAND,
-    ItemID.MEGATONARM,
-    ItemID.FLASHBLADE,
-    ItemID.PEARL_EDGE,
-    ItemID.HURRICANE,
-    ItemID.GLOW_HELM,
-    ItemID.LODE_HELM,
-    ItemID.TABAN_HELM,
-    ItemID.LUMIN_ROBE,
-    ItemID.FLASH_MAIL,
-    ItemID.WHITE_VEST,
-    ItemID.BLACK_VEST,
-    ItemID.BLUE_VEST,
-    ItemID.RED_VEST,
-    ItemID.TABAN_VEST,
-    ItemID.AMULET,
-    ItemID.SPEED_BELT,
-    ItemID.FLEA_VEST,
-    ItemID.MAGIC_SEAL,
-    ItemID.POWER_SEAL,
-    ItemID.GOLD_ERNG,
-    ItemID.SILVERSTUD,
-    ItemID.GREENDREAM,
-    ItemID.DEMON_EDGE,
-    ItemID.ALLOYBLADE,
-    ItemID.SLASHER,
-    ItemID.COMETARROW,
-    ItemID.SONICARROW,
-    ItemID.MEGABLAST,
-    ItemID.GRAEDUS,
-    ItemID.BIG_HAND,
-    ItemID.KAISER_ARM,
-    ItemID.RUNE_BLADE,
-    ItemID.DEMON_HIT,
-    ItemID.STARSCYTHE,
-    ItemID.AEON_HELM,
-    ItemID.DARK_HELM,
-    ItemID.RBOW_HELM,
-    ItemID.MERMAIDCAP,
-    ItemID.LODE_VEST,
-    ItemID.AEON_SUIT,
-    ItemID.WHITE_MAIL,
-    ItemID.BLACK_MAIL,
-    ItemID.BLUE_MAIL,
-    ItemID.RED_MAIL,
-    ItemID.DASH_RING,
-    ItemID.GOLD_STUD,
-    ItemID.SUN_SHADES,
-    ItemID.STAR_SWORD,
-    ItemID.VEDICBLADE,
-    ItemID.KALI_BLADE,
-    ItemID.VALKERYE,
-    ItemID.SIREN,
-    ItemID.SHOCK_WAVE,
-    ItemID.GIGA_ARM,
-    ItemID.TERRA_ARM,
-    ItemID.BRAVESWORD,
-    ItemID.DOOMSICKLE,
-    ItemID.GLOOM_HELM,
-    ItemID.SAFE_HELM,
-    ItemID.SIGHT_CAP,
-    ItemID.MEMORY_CAP,
-    ItemID.TIME_HAT,
-    ItemID.ZODIACCAPE,
-    ItemID.RUBY_ARMOR,
-    ItemID.GLOOM_CAPE,
-    ItemID.PRISMSPECS,
-    ItemID.SHIVA_EDGE,
-    ItemID.SWALLOW,
-    ItemID.SLASHER_2,
-    ItemID.RAINBOW,
-    ItemID.WONDERSHOT,
-    ItemID.CRISIS_ARM,
-    ItemID.HASTE_HELM,
-    ItemID.PRISM_HELM,
-    ItemID.VIGIL_HAT,
-    ItemID.PRISMDRESS,
-    ItemID.TABAN_SUIT,
-    ItemID.MOON_ARMOR,
-    ItemID.NOVA_ARMOR,
-    ItemID.FULL_TONIC,
-    ItemID.MID_ETHER,
-    ItemID.LAPIS,
-    ItemID.BARRIER,
-    ItemID.SHIELD,
-    ItemID.FULL_ETHER,
-    ItemID.HYPERETHER,
-    ItemID.ELIXIR,
-    ItemID.MEGAELIXIR,
-    ItemID.POWER_TAB,
-    ItemID.MAGIC_TAB,
-    ItemID.SPEED_TAB,
+    ItemID.THIRD_EYE, ItemID.WALLET, ItemID.SILVERERNG, ItemID.FRENZYBAND,
+    ItemID.POWER_RING, ItemID.MAGIC_RING, ItemID.WALL_RING, ItemID.FLINT_EDGE,
+    ItemID.DARK_SABER, ItemID.AEON_BLADE, ItemID.SAGE_BOW, ItemID.DREAM_BOW,
+    ItemID.RUBY_GUN, ItemID.DREAM_GUN, ItemID.DOOMFINGER, ItemID.MAGMA_HAND,
+    ItemID.MEGATONARM, ItemID.FLASHBLADE, ItemID.PEARL_EDGE, ItemID.HURRICANE,
+    ItemID.GLOW_HELM, ItemID.LODE_HELM, ItemID.TABAN_HELM, ItemID.LUMIN_ROBE,
+    ItemID.FLASH_MAIL, ItemID.WHITE_VEST, ItemID.BLACK_VEST, ItemID.BLUE_VEST,
+    ItemID.RED_VEST, ItemID.TABAN_VEST, ItemID.AMULET, ItemID.SPEED_BELT,
+    ItemID.FLEA_VEST, ItemID.MAGIC_SEAL, ItemID.POWER_SEAL, ItemID.GOLD_ERNG,
+    ItemID.SILVERSTUD, ItemID.GREENDREAM, ItemID.DEMON_EDGE, ItemID.ALLOYBLADE,
+    ItemID.SLASHER, ItemID.COMETARROW, ItemID.SONICARROW, ItemID.MEGABLAST,
+    ItemID.GRAEDUS, ItemID.BIG_HAND, ItemID.KAISER_ARM, ItemID.RUNE_BLADE,
+    ItemID.DEMON_HIT, ItemID.STARSCYTHE, ItemID.AEON_HELM, ItemID.DARK_HELM,
+    ItemID.RBOW_HELM, ItemID.MERMAIDCAP, ItemID.LODE_VEST, ItemID.AEON_SUIT,
+    ItemID.WHITE_MAIL, ItemID.BLACK_MAIL, ItemID.BLUE_MAIL, ItemID.RED_MAIL,
+    ItemID.DASH_RING, ItemID.GOLD_STUD, ItemID.SUN_SHADES, ItemID.STAR_SWORD,
+    ItemID.VEDICBLADE, ItemID.KALI_BLADE, ItemID.VALKERYE, ItemID.SIREN,
+    ItemID.SHOCK_WAVE, ItemID.GIGA_ARM, ItemID.TERRA_ARM, ItemID.BRAVESWORD,
+    ItemID.DOOMSICKLE, ItemID.GLOOM_HELM, ItemID.SAFE_HELM, ItemID.SIGHT_CAP,
+    ItemID.MEMORY_CAP, ItemID.TIME_HAT, ItemID.ZODIACCAPE, ItemID.RUBY_ARMOR,
+    ItemID.GLOOM_CAPE, ItemID.PRISMSPECS, ItemID.SHIVA_EDGE, ItemID.SWALLOW,
+    ItemID.SLASHER_2, ItemID.RAINBOW, ItemID.WONDERSHOT, ItemID.CRISIS_ARM,
+    ItemID.HASTE_HELM, ItemID.PRISM_HELM, ItemID.VIGIL_HAT, ItemID.PRISMDRESS,
+    ItemID.TABAN_SUIT, ItemID.MOON_ARMOR, ItemID.NOVA_ARMOR, ItemID.FULL_TONIC,
+    ItemID.MID_ETHER, ItemID.LAPIS, ItemID.BARRIER, ItemID.SHIELD,
+    ItemID.FULL_ETHER, ItemID.HYPERETHER, ItemID.ELIXIR, ItemID.MEGAELIXIR,
+    ItemID.POWER_TAB, ItemID.MAGIC_TAB, ItemID.SPEED_TAB,
+]
+
+taban_helm_gifts = [
+    ItemID.TABAN_HELM, ItemID.TIME_HAT, ItemID.GLOOM_HELM, ItemID.RBOW_HELM,
+    ItemID.MERMAIDCAP, ItemID.OZZIEPANTS, ItemID.SAFE_HELM, ItemID.HASTE_HELM,
+    ItemID.PRISM_HELM, ItemID.VIGIL_HAT,
+]
+
+taban_weapon_gifts = [
+    ItemID.VEDICBLADE, ItemID.KALI_BLADE, ItemID.SWALLOW, ItemID.SLASHER_2,
+    ItemID.SONICARROW, ItemID.SIREN, ItemID.SHOCK_WAVE, ItemID.KAISER_ARM,
+    ItemID.GIGA_ARM, ItemID.RUNE_BLADE, ItemID.BRAVESWORD, ItemID.DEMON_HIT,
+    ItemID.STARSCYTHE, ItemID.SHIVA_EDGE, ItemID.RAINBOW, ItemID.VALKERYE,
+    ItemID.WONDERSHOT, ItemID.TERRA_ARM, ItemID.CRISIS_ARM, ItemID.DOOMSICKLE,
+]
+
+trade_ranged = [ItemID.VALKERYE, ItemID.SHOCK_WAVE, ItemID.DOOMSICKLE]
+trade_accessory = [
+    ItemID.GOLD_ERNG, ItemID.GOLD_STUD, ItemID.PRISMSPECS, ItemID.AMULET,
+    ItemID.DASH_RING
+]
+trade_tabs = [ItemID.POWER_TAB, ItemID.MAGIC_TAB, ItemID.SPEED_TAB]
+trade_melee = [
+    ItemID.RAINBOW, ItemID.TERRA_ARM, ItemID.BRAVESWORD,
+]
+trade_armors = [
+    ItemID.GLOOM_CAPE, ItemID.TABAN_SUIT, ItemID.ZODIACCAPE,
+    ItemID.NOVA_ARMOR, ItemID.MOON_ARMOR, ItemID.PRISMDRESS,
+]
+trade_helms = [
+    ItemID.TABAN_HELM, ItemID.DARK_HELM, ItemID.RBOW_HELM,
+    ItemID.MERMAIDCAP, ItemID.SAFE_HELM, ItemID.HASTE_HELM, ItemID.PRISM_HELM,
+]
+
+jerky_rewards = [
+    ItemID.PRISMSPECS, ItemID.SHIVA_EDGE, ItemID.SWALLOW, ItemID.SLASHER_2,
+    ItemID.RAINBOW, ItemID.WONDERSHOT, ItemID.CRISIS_ARM, ItemID.HASTE_HELM,
+    ItemID.PRISM_HELM, ItemID.VIGIL_HAT, ItemID.PRISMDRESS, ItemID.TABAN_SUIT,
+    ItemID.MOON_ARMOR, ItemID.NOVA_ARMOR,
 ]
 
 lowlvlchests = \
@@ -636,6 +346,183 @@ hlvlitems = [0x9A,0x9B,0xA3,0xBA,0x0B,0x0C,0x0D,0x19,0x1A,0x27,0x37,0x38,0x41,0x
 hlvlconsumables = [0xC3,0xC4,0xCD,0xCE,0xCF]
 alvlitems = [0xBB,0x0E,0x53,0x54,0x55,0x28,0x39,0x91,0x86,0x8F,0x6C,0x7A,0x6D,0x6B]
 alvlconsumables = [0xC3,0xC5]
+
+
+# distribution uses relative frequencies (rf) instead of float probabilities
+# for precision.
+class TreasureDist:
+
+    def __init__(self, *weight_item_pairs: Tuple[int, list[ItemID]]):
+        print(weight_item_pairs)
+        input()
+        self.weight_item_pairs = weight_item_pairs
+
+    def get_random_item(self) -> ItemID:
+        target = rand.randrange(0, self.__total_weight)
+
+        value = 0
+        for x in self.__weight_item_pairs:
+            value += x[0]
+
+            if value > target:
+                return rand.choice(x[1])
+
+        print("Error, no selection")
+        exit()
+
+    @property
+    def weight_item_pairs(self):
+        return self.__weight_item_pairs
+
+    @weight_item_pairs.setter
+    def weight_item_pairs(self, new_pairs: list[Tuple[int, list[ItemID]]]):
+        self.__weight_item_pairs = new_pairs
+        self.__total_weight = sum(x[0] for x in new_pairs)
+
+
+def process_ctrom(ctrom: CTRom, settings: rset.Settings,
+                  config: cfg.RandoConfig):
+
+    flags = settings.gameflags
+
+    # Fixed a bug in tab distribution, was 1, 10, 9
+    tab_dist = TreasureDist(
+            (1, [ItemID.SPEED_TAB]),
+            (10, [ItemID.POWER_TAB]),
+            (10, [ItemID.MAGIC_TAB])
+    )
+
+    sealed_dist = TreasureDist(
+        (1, sealed_treasures)
+    )
+
+    # Set up the treasure distributions
+    # This is Anskiy's original treasure distribution.
+    if rset.GameFlags.TAB_TREASURES in flags:
+        low_dist = tab_dist
+        low_mid_dist = tab_dist
+        mid_dist = tab_dist
+        mid_high_dist = tab_dist
+        high_awesome_dist = tab_dist
+        sealed_dist = tab_dist
+    elif settings.item_difficulty == rset.Difficulty.EASY:
+        low_dist = TreasureDist(
+            (5, passable_lvl_consumables+mid_lvl_consumables),
+            (6, passable_lvl_items+mid_lvl_items)
+        )
+        low_mid_dist = TreasureDist(
+            (50, mid_lvl_consumables+good_lvl_consumables),
+            (15, good_lvl_items),
+            (45, mid_lvl_items)
+        )
+        mid_dist = TreasureDist(
+            (50, good_lvl_consumables + high_lvl_consumables),
+            (3, awesome_lvl_items),
+            (12, high_lvl_items),
+            (45, good_lvl_items)
+        )
+        mid_high_dist = mid_dist
+        high_awesome_dist = TreasureDist(
+            (50, good_lvl_consumables+high_lvl_consumables),
+            (3, awesome_lvl_items),
+            (12, high_lvl_items),
+            (45, good_lvl_items)
+        )
+    elif settings.item_difficulty == rset.Difficulty.NORMAL:
+        low_dist = TreasureDist(
+            (50, low_lvl_consumables),
+            (60, low_lvl_items)
+        )
+        low_mid_dist = TreasureDist(
+            (50, low_lvl_consumables + passable_lvl_consumables),
+            (15, mid_lvl_items),
+            (45, passable_lvl_items)
+        )
+        mid_dist = TreasureDist(
+            (50, passable_lvl_consumables + mid_lvl_consumables),
+            (3, high_lvl_items),
+            (12, good_lvl_items),
+            (45, mid_lvl_items)
+        )
+        mid_high_dist = TreasureDist(
+            (50, mid_lvl_consumables + good_lvl_consumables),
+            (3, awesome_lvl_items),
+            (12, high_lvl_items),
+            (45, good_lvl_items)
+        )
+        high_awesome_dist = TreasureDist(
+            (400,
+             good_lvl_consumables + high_lvl_consumables +
+             awesome_lvl_consumables),
+            (175, awesome_lvl_items),
+            (525, good_lvl_items + high_lvl_items)
+        )
+    elif settings.item_difficulty == rset.Difficulty.HARD:
+        low_dist = TreasureDist(
+            (5, low_lvl_consumables),
+            (6, low_lvl_items)
+        )
+        low_mid_dist = TreasureDist(
+            (5, low_lvl_consumables+passable_lvl_consumables),
+            (6, passable_lvl_items)
+        )
+        mid_dist = TreasureDist(
+            (5, passable_lvl_consumables + mid_lvl_consumables),
+            (6, mid_lvl_items)
+        )
+        mid_high_dist = TreasureDist(
+            (5, mid_lvl_consumables + good_lvl_consumables),
+            (6, mid_lvl_items + good_lvl_items)
+        )
+        high_awesome_dist = TreasureDist(
+            (400,
+             mid_lvl_consumables + good_lvl_consumables +
+             high_lvl_consumables + awesome_lvl_consumables),
+            (175, awesome_lvl_items),
+            (525, mid_lvl_items + good_lvl_items + high_lvl_items)
+        )
+    else:
+        print('Bad item difficulty')
+        exit()
+
+    tiers = [low_lvl_chests, low_mid_lvl_chests, mid_lvl_chests,
+             mid_high_lvl_chests, high_awesome_lvl_chests,
+             sealed_chests]
+
+    dists = [low_dist, low_mid_dist, mid_dist,
+             mid_high_dist, high_awesome_dist,
+             sealed_dist]
+
+    assign = config.treasure_assign_dict
+    for i in range(len(tiers)):
+        treasures = tiers[i]
+        dist = dists[i]
+        for treasure in treasures:
+            assign[treasure].held_item = dist.get_random_item()
+
+    # Now do special treasures.  These don't have complicated distributions.
+    specials = [
+        TID.TABAN_GIFT_HELM, TID.TABAN_GIFT_WEAPON,
+        TID.TRADING_POST_ARMOR, TID.TRADING_POST_HELM,
+        TID.TRADING_POST_MELEE_WEAPON,
+        TID.TRADING_POST_RANGED_WEAPON,
+        TID.TRADING_POST_TAB,
+        TID.JERKY_GIFT
+    ]
+    item_lists = [
+        taban_helm_gifts, taban_weapon_gifts,
+        trade_armors, trade_helms,
+        trade_melee,
+        trade_ranged,
+        trade_tabs,
+        jerky_rewards
+    ]
+
+    for i in range(len(specials)):
+        treasure = specials[i]
+        items = item_lists[i]
+        assign[treasure].held_item = \
+            rand.choice(items)
 
 def choose_item(pointer,difficulty,tab_treasures):
     rand_num = rand.randrange(0,11,1)
@@ -828,9 +715,20 @@ def main():
 
     # find_script_ptrs(mhighlvlchests)
 
-    # items = hlvlconsumables
+    # items = []
     # item_num_to_enum(items)
 
+    '''
+    dist = TreasureDist(
+        (1, awesome_lvl_consumables),
+        (3, awesome_lvl_items)
+    )
+
+    for i in range(20):
+        print(dist.get_random_item())
+    '''
+
+    '''
     sealed_ptrs = [0xC3328, 0xC332C,    # 0 Truce 1000
                    0x1BA717, 0x1BA72B,  # 2 Unknown
                    0x1BAB33, 0x1BAB35,  # 4 left pyramid
@@ -866,7 +764,7 @@ def main():
         rom = bytearray(infile.read())
 
     found_ptrs = [False for x in range(len(sealed_ptrs))]
-        
+
     print(f"{len(rom):06X}")
     for loc in range(0, 0x1F0):
         start = get_loc_event_ptr(rom, int(loc))
@@ -879,6 +777,7 @@ def main():
                       f"in {loc:04X}")
 
     print([x for x in range(len(found_ptrs)) if not found_ptrs[x]])
+    '''
 
     '''
     copy = high_awesome_lvl_chests[:]

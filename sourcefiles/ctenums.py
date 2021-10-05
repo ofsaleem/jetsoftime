@@ -153,6 +153,8 @@ class LocID(StrIntEnum):
 
     # Additional Script Chest Locations
     NORTHERN_RUINS_BASEMENT = 0x42
+    IOKA_TRADING_POST = 0x115
+    PORRE_MAYOR_1F = 0x32
 
     @classmethod
     def get_boss_locations(cls):
@@ -501,7 +503,7 @@ class TreasureID(StrIntEnum):
     NORTHERN_RUINS_BACK_LEFT_SEALED_600 = auto()
     NORTHERN_RUINS_BACK_RIGHT_SEALED_600 = auto()
     NORTHERN_RUINS_BACK_LEFT_SEALED_1000 = auto()
-    NORTHERN_RUINS_BACK_RIGHT_1000 = auto()
+    NORTHERN_RUINS_BACK_RIGHT_SEALED_1000 = auto()
     # On 0x42 Northern Ruins Basement Corridor
     NORTHERN_RUINS_BASEMENT_600 = auto()
     # Frog locked one
@@ -731,3 +733,58 @@ class TreasureID(StrIntEnum):
     MAGUS_CASTLE_PIT_W = auto()
     # GIANTS_CLAW_MAZE Unused: 0xF7
     # DEATH_PEAK_CLIFF Unused: 0xF8
+    # Weird ones
+    TABAN_GIFT_WEAPON = auto()
+    TABAN_GIFT_HELM = auto()
+    TRADING_POST_RANGED_WEAPON = auto()
+    TRADING_POST_ACCESSORY = auto()
+    TRADING_POST_TAB = auto()
+    TRADING_POST_MELEE_WEAPON = auto()
+    TRADING_POST_ARMOR = auto()
+    TRADING_POST_HELM = auto()
+    JERKY_GIFT = auto()
+    # Rocks not in chests
+    DENADORO_ROCK = auto()
+    KAJAR_ROCK = auto()
+    LARUBA_ROCK = auto()
+
+    @classmethod
+    def get_open_locations(cls):
+        return [
+            cls.TRUCE_MAYOR_1F, cls.TRUCE_MAYOR_2F,
+            cls.FOREST_RUINS,
+            cls.PORRE_MAYOR_2F,
+            cls.TRUCE_CANYON_1, cls.TRUCE_CANYON_2,
+            cls.FIONAS_HOUSE_1, cls.FIONAS_HOUSE_2,
+            cls.CURSED_WOODS_1, cls.CURSED_WOODS_2,
+            cls.FROGS_BURROW_RIGHT
+        ]
+
+    @classmethod
+    def get_cathedral_locations(cls):
+        return [
+            cls.MANORIA_CATHEDRAL_1, cls.MANORIA_CATHEDRAL_2,
+            cls.MANORIA_CATHEDRAL_3,
+            cls.MANORIA_INTERIOR_1, cls.MANORIA_INTERIOR_2,
+            cls.MANORIA_INTERIOR_3, cls.MANORIA_INTERIOR_4,
+            cls.MANORIA_BROMIDE_1, cls.MANORIA_BROMIDE_2,
+            cls.MANORIA_BROMIDE_3,
+            cls.MANORIA_SHRINE_MAGUS_1, cls.MANORIA_SHRINE_MAGUS_2,
+            cls.MANORIA_SHRINE_SIDEROOM_1, cls.MANORIA_SHRINE_SIDEROOM_2
+        ]
+
+    @classmethod
+    def get_mt_woe_locations(cls):
+        return [
+            cls.MT_WOE_1ST_SCREEN,
+            cls.MT_WOE_2ND_SCREEN_1, cls.MT_WOE_2ND_SCREEN_2,
+            cls.MT_WOE_2ND_SCREEN_3, cls.MT_WOE_2ND_SCREEN_4,
+            cls.MT_WOE_2ND_SCREEN_5,
+            cls.MT_WOE_3RD_SCREEN_1, cls.MT_WOE_3RD_SCREEN_2,
+            cls.MT_WOE_3RD_SCREEN_3, cls.MT_WOE_3RD_SCREEN_4,
+            cls.MT_WOE_3RD_SCREEN_5,
+            cls.MT_WOE_FINAL_1, cls.MT_WOE_FINAL_2,
+            cls.MT_WOE_KEY
+        ]
+
+    

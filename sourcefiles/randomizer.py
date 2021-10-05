@@ -24,8 +24,10 @@ import fastmagic
 import charrando
 import roboribbon
 
+import ctenums
 from ctrom import CTRom
 
+from freespace import FSWriteType
 import randoconfig as cfg
 import randosettings as rset
 
@@ -513,6 +515,41 @@ def generate_rom():
 
 
 def main():
+
+    with open('./roms/jets_test.sfc', 'rb') as infile:
+        rom = infile.read()
+
+    settings = rset.Settings.get_race_presets()
+
+    config = cfg.RandoConfig()
+    ctrom = CTRom(rom, True)
+
+    space_manager = ctrom.rom_data.space_manager
+
+    # Set up some safe free blocks.
+    space_manager.mark_block((0, 0x40FFFF),
+                             FSWriteType.MARK_USED)
+    space_manager.mark_block((0x411007, 0x5B8000),
+                             FSWriteType.MARK_FREE)
+    
+    settings = settings
+
+    # Test some treasure writing
+    t_assign = config.treasure_assign_dict
+    
+    TID = ctenums.TreasureID
+
+    print(t_assign[TID.TABAN_GIFT_HELM])
+    t_assign[TID.TABAN_GIFT_HELM].write_to_ctrom(ctrom)
+    t_assign[TID.MANORIA_BROMIDE_1].write_to_ctrom(ctrom)
+
+    ctrom.write_all_scripts_to_rom()
+
+    with open('./roms/jets_test_out.sfc', 'wb') as outfile:
+        ctrom.rom_data.seek(0)
+        outfile.write(ctrom.rom_data.read())
+    
+    '''
     filename = './roms/ct.sfc'
     with open(filename, 'rb') as infile:
         rom = infile.read()
@@ -521,8 +558,8 @@ def main():
 
     rando = Randomizer(rom, settings)
     rando.randomize()
-
-
+    '''
+    
 if __name__ == "__main__":
     main()
     '''
