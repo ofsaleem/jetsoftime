@@ -156,6 +156,10 @@ class LocID(StrIntEnum):
     IOKA_TRADING_POST = 0x115
     PORRE_MAYOR_1F = 0x32
 
+    # Rocks
+    DENADORO_MTS_MASAMUNE_EXTERIOR = 0x8F
+    LARUBA_RUINS = 0x124
+
     @classmethod
     def get_boss_locations(cls):
         return [
@@ -749,7 +753,7 @@ class TreasureID(StrIntEnum):
     LARUBA_ROCK = auto()
 
     @classmethod
-    def get_open_locations(cls):
+    def get_open_treasures(cls):
         return [
             cls.TRUCE_MAYOR_1F, cls.TRUCE_MAYOR_2F,
             cls.FOREST_RUINS,
@@ -761,7 +765,7 @@ class TreasureID(StrIntEnum):
         ]
 
     @classmethod
-    def get_cathedral_locations(cls):
+    def get_cathedral_treasures(cls):
         return [
             cls.MANORIA_CATHEDRAL_1, cls.MANORIA_CATHEDRAL_2,
             cls.MANORIA_CATHEDRAL_3,
@@ -774,7 +778,7 @@ class TreasureID(StrIntEnum):
         ]
 
     @classmethod
-    def get_mt_woe_locations(cls):
+    def get_mt_woe_treasures(cls):
         return [
             cls.MT_WOE_1ST_SCREEN,
             cls.MT_WOE_2ND_SCREEN_1, cls.MT_WOE_2ND_SCREEN_2,

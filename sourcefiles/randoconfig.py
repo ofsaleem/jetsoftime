@@ -728,6 +728,16 @@ class RandoConfig:
                 function_id=0x01,
                 item_num=0
             ),
+            TID.DENADORO_ROCK: ScriptTreasure(
+                location=LocID.DENADORO_MTS_MASAMUNE_EXTERIOR,
+                object_id=0x01,
+                function_id=0x07
+            ),
+            TID.LARUBA_ROCK: ScriptTreasure(
+                location=LocID.LARUBA_RUINS,
+                object_id=0x0D,
+                function_id=0x01
+            )
             # Tabs later if they're going to be randomized
             # GUARDIA_FOREST_POWER_TAB_600: auto()
             # GUARDIA_FOREST_POWER_TAB_1000: auto()
