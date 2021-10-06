@@ -6,6 +6,7 @@ from ctdecompress import compress, decompress, get_compressed_length, \
 from ctenums import LocID
 from byteops import get_value_from_bytes, to_little_endian, to_file_ptr, \
     to_rom_ptr, print_bytes
+import ctstrings
 from eventcommand import EventCommand as EC, get_command, FuncSync
 from eventfunction import EventFunction as EF
 from freespace import FreeSpace as FS, FSRom
@@ -227,6 +228,42 @@ class Event:
 
         ptr = get_loc_event_ptr(rom, loc_id)
         return Event.from_rom(rom, ptr)
+
+    def from_flux(filename: str):
+        with open(filename, 'rb') as infile:
+            flux = infile.read()
+
+        script_start = 0x17
+        script_len = get_value_from_bytes(flux[0x13:0x15])
+        script_end = script_start+script_len
+
+        print(f"script_end: {script_end:04X}")
+        ret_script = Event()
+
+        ret_script.num_objects = flux[0x17]
+        ret_script.data = flux[0x18:script_end]
+
+        # Now for strings, it's just ascii encoding.
+        # Null terminators are encoded as '{null}'
+        string_data = flux[script_end+6:]
+
+        # flux files for whatever reason write each ascii character as a
+        # 16 bit integer.  Remove the 0s.
+        string_data = bytearray([x for x in string_data if x != 0])
+        ascii_strings = string_data.decode('ascii')
+
+        ct_strings = ctstrings.ascii_to_ct_string(ascii_strings)
+
+        # split the strings at the terminators BUT then add the terminator
+        # back to the end.  He said he's be back afterall.
+        ret_script.strings = \
+            [string+bytes([0]) for string in ct_strings.split(bytes([0]))
+             if string != b'']
+
+        # Be lazy.  Just say the strings are new and need to be rewritten.
+        ret_script.modified_strings = True
+
+        return ret_script
 
     def from_rom(rom: bytearray, ptr: int) -> Event:
         ret_event = Event()
@@ -1241,6 +1278,12 @@ class ScriptManager:
 
 
 def main():
+
+    script = Event.from_flux('./flux/nizbel2.flux')
+    input()
+    quit()
+
+    # track string dups
     with open('./roms/jets_test.sfc', 'rb') as infile:
         rom = bytearray(infile.read())
 
