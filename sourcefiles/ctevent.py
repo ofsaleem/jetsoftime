@@ -92,7 +92,7 @@ def free_event(fsrom: FS, loc_id: int):
 
         # Assume that everything from the string index to the first string is
         # two byte pointers to the strings.
-        
+
         # This will not always be true...strings are going to take more care
         # to free correctly.  For now let's live with some string duplication.
         num_strings = (first_str_addr - string_index) / 2
@@ -128,8 +128,8 @@ class Event:
     def __init__(self):
         self.num_objects = 0
 
-        self.extra_ptr_st = 0
-        self.script_st = 0
+        # self.extra_ptr_st = 0
+        # self.script_st = 0
 
         self.data = bytearray()
 
@@ -230,9 +230,14 @@ class Event:
         return Event.from_rom(rom, ptr)
 
     def from_flux(filename: str):
+        '''Reads a .flux file and loads it into an Event'''
+
         with open(filename, 'rb') as infile:
             flux = infile.read()
 
+        # These first bytes are used internally by TF, but they don't seem
+        # to matter for our purposes.  If we want to write flux files we'll
+        # have to figure those out.
         script_start = 0x17
         script_len = get_value_from_bytes(flux[0x13:0x15])
         script_end = script_start+script_len
@@ -243,25 +248,59 @@ class Event:
         ret_script.num_objects = flux[0x17]
         ret_script.data = flux[0x18:script_end]
 
-        # Now for strings, it's just ascii encoding.
-        # Null terminators are encoded as '{null}'
-        string_data = flux[script_end+6:]
+        # Now for strings... This is the ugly part.
+        ret_script.strings = []
+        num_strings = flux[script_end]
 
-        # flux files for whatever reason write each ascii character as a
-        # 16 bit integer.  Remove the 0s.
-        string_data = bytearray([x for x in string_data if x != 0])
-        ascii_strings = string_data.decode('ascii')
+        # a few more blank/unknown bytes after number of strings
+        pos = script_end + 4
+        cur_string_ind = 0
 
-        ct_strings = ctstrings.ascii_to_ct_string(ascii_strings)
+        while pos < len(flux):
+            print(f"Current string: {cur_string_ind:02X} at {pos+0xCA1:04X}")
+            string_ind = flux[pos]
 
-        # split the strings at the terminators BUT then add the terminator
-        # back to the end.  He said he's be back afterall.
-        ret_script.strings = \
-            [string+bytes([0]) for string in ct_strings.split(bytes([0]))
-             if string != b'']
+            if string_ind != cur_string_ind:
+                print(f"Expected {cur_string_ind:02X}, found {string_ind:02X}")
+                exit()
 
-        # Be lazy.  Just say the strings are new and need to be rewritten.
-        ret_script.modified_strings = True
+            string_len = flux[pos+1]
+            pos += 2
+
+            # The byte after the string length byte is optional.
+            # If present, value N means add 0x80*(N-1) to the length.
+            # Being present means having a value in the unprintable range
+            # (value < 0x20).
+            if flux[pos] < 0x20:
+                string_len += 0x80*(flux[pos]-1)
+                pos += 1
+
+            string_end = pos + string_len
+
+            cur_string = flux[pos:string_end]
+            # Remove non-printable characters from the string.  Flux seems to
+            # put each ascii char in 16 bits, so there are many 0x00s.  There
+            # are also cr/lf since flux is formatting the strings in the gui.
+
+            cur_string = \
+                bytes([x for x in cur_string if x in range(0x20, 0x7F)])
+
+            # alias to save keystrokes
+            CTString = ctstrings.CTString
+
+            ct_str = CTString.from_ascii(cur_string.decode('ascii'))
+            ct_str.compress()
+
+            ret_script.strings.append(ct_str)
+
+            pos += string_len
+            cur_string_ind += 1
+        # end while pos < len(flux)
+
+        if num_strings != len(ret_script.strings):
+            print(f"Expected {num_strings} strings.  "
+                  f"Found {len(ret_script.strings)}")
+            exit()
 
         return ret_script
 
@@ -280,8 +319,8 @@ class Event:
         # According to Geiger's notes, sometimes there are extra pointers.
         # I might just throw them away, but potentially these can be associated
         # with an (obj, func) and updated as need be.
-        ret_event.extra_ptr_st = 32*ret_event.num_objects
-        ret_event.script_st = get_value_from_bytes(event[0:2])
+        # ret_event.extra_ptr_st = 32*ret_event.num_objects
+        # ret_event.script_st = get_value_from_bytes(event[0:2])
 
         # Build the strings up.
         ret_event.__init_strings(rom)
@@ -824,7 +863,7 @@ class Event:
         self.__shift_calls_back(obj_id)
 
     '''
-    # The idea of a separate object type stopped making sense because the 
+    # The idea of a separate object type stopped making sense because the
     # object type would need all of the functionality of a full script
     # TODO: Make methods for pull out parts of a script into a new script and
     #       merging scripts.
@@ -1279,9 +1318,32 @@ class ScriptManager:
 
 def main():
 
-    script = Event.from_flux('./flux/nizbel2.flux')
+    # Try to get an event from a flux
+    script = Event.from_flux('./flux/normal-spekkio.flux')
+
+    for x in script.strings:
+        print_bytes(x, 16)
+        print()
+
     input()
-    quit()
+
+    # Inspect spekkio strings for comparison to flux
+    with open('./roms/jets_test.sfc', 'rb') as infile:
+        rom = bytearray(infile.read())
+
+    spekkio_script = Event.from_rom_location(rom, 0x1D1)
+
+    for ind, x in enumerate(spekkio_script.strings):
+        print(f"String {ind:02X}")
+        print_bytes(x, 16)
+        print(ctstrings.CTString.ct_bytes_to_ascii(x))
+
+        y = script.strings[ind]
+        print_bytes(y, 16)
+        print(ctstrings.CTString.ct_bytes_to_ascii(y))
+        print()
+
+    exit()
 
     # track string dups
     with open('./roms/jets_test.sfc', 'rb') as infile:
