@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pickle
 
-from byteops import get_value_from_bytes, to_little_endian, print_bytes
+from byteops import get_value_from_bytes, print_bytes
 
 
 class Node:
@@ -273,6 +273,9 @@ class CTString(bytearray):
                 ret_str += f"{cur_byte-0xD4}"
             elif cur_byte in range(0xDE, 0xF4):
                 ret_str += self.symbols[cur_byte-0xDE]
+            elif cur_byte == 0xFF:
+                # enemies edited in TF seem to get FFs in their names
+                ret_str += ' '
             else:
                 ret_str += '[:bad:]'
                 print(f"Bad byte: {cur_byte:02X}")
