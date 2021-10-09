@@ -10,6 +10,7 @@ from ctenums import ItemID, LocID, TreasureID as TID, CharID
 # from ctevent import ScriptManager as SM, Event
 from ctrom import CTRom
 from freespace import FSWriteType  # Only for the test main() code
+import enemystats
 
 
 # All CharRecruits are script-based
@@ -197,7 +198,7 @@ class ScriptTreasure(Treasure):
 
 class RandoConfig:
 
-    def __init__(self):
+    def __init__(self, rom: bytearray):
 
         self.treasure_assign_dict = {
             TID.TRUCE_MAYOR_1F: ChestTreasure(0x02),
@@ -781,6 +782,8 @@ class RandoConfig:
                 recruit_obj_id=0x18
             )
         }
+
+        self.enemy_dict = enemystats.get_stat_dict(rom)
 
 
 def main():
