@@ -26,6 +26,7 @@ import roboribbon
 
 import ctenums
 from ctrom import CTRom
+import enemyrewards
 
 from freespace import FSWriteType
 import randoconfig as cfg
@@ -82,6 +83,8 @@ class Randomizer:
             fastmagic.process_ctrom(self.ctrom, self.settings, self.config)
 
         tabwriter.process_ctrom(self.ctrom, self.settings, self.config)
+        treasures.process_ctrom(self.ctrom, self.settings, self.config)
+        enemyrewards.process_ctrom(self.ctrom, self.settings, self.config)
 
     # Just apply the various glitch fix patches
     def fix_glitches(self):

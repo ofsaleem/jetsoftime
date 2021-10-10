@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from io import BufferedWriter
 
@@ -21,7 +22,7 @@ class EnemyStats:
     drop_item: ctenums.ItemID = ctenums.ItemID.MOP
     charm_item: ctenums.ItemID = ctenums.ItemID.MOP
     tp: int = 0
-    
+
     # There are more special flags, but I'm ignoring them for now
     can_sightscope: bool = False
 
@@ -107,7 +108,8 @@ class EnemyStats:
         # We shouldn't be changing those, right?
 
 
-def get_stat_dict(rom: bytearray):
+def get_stat_dict(rom: bytearray) -> dict[ctenums.EnemyID,
+                                          ctenums.EnemyID:EnemyStats]:
 
     EnemyID = ctenums.EnemyID
     stat_dict = dict()
@@ -121,6 +123,40 @@ def get_stat_dict(rom: bytearray):
 def main():
 
     EnemyID = ctenums.EnemyID
+
+    # Get enemy names
+    with open('./roms/ct.sfc', 'rb') as infile1:
+        rom1 = infile1.read()
+
+    with open('./roms/jets_test.sfc', 'rb') as infile2:
+        rom2 = infile2.read()
+
+    enemy_name_st = 0x0C6500
+    enemy_name_end = 0x0C6FC9
+
+    name_size = 0x11
+    enemy_names1 = rom1[enemy_name_st:enemy_name_end]
+    enemy_names2 = rom2[enemy_name_st:enemy_name_end]
+
+    for ind in range(0xFB):
+        st = ind*11
+        end = (ind+1)*11
+        
+        name1 = enemy_names1[st:end]
+        name2 = enemy_names2[st:end]
+
+        if name1 != name2:
+            str1 = ctstrings.CTString.ct_bytes_to_ascii(name1)
+            str2 = ctstrings.CTString.ct_bytes_to_ascii(name2)
+
+            print(f"{ind:02X}: {str1} != {str2}")
+
+        # x = ctstrings.CTString.ct_bytes_to_ascii(name).upper()
+        # x = x.replace(' ', '_')
+        # print(f"    {x} = 0x{ind:02X}")
+
+    exit()
+
     # Read all enemy stats
     with open('./roms/jets_test.sfc', 'rb') as infile:
         rom = bytearray(infile.read())
@@ -132,35 +168,6 @@ def main():
 
     print(stat_dict[EnemyID.MAGUS])
     exit()
-
-    # Get enemy names
-    with open('./roms/ct.sfc', 'rb') as infile:
-        rom = infile.read()
-
-    enemy_name_st = 0x0C6500
-    enemy_name_end = 0x0C6FC9
-
-    name_size = 0x11
-    enemy_names = rom[enemy_name_st:enemy_name_end]
-
-    pos = 0
-    for ind in range(0xFB):
-        st = ind*11
-        end = (ind+1)*11
-        
-        name = enemy_names[st:end]
-
-        pos = 10
-        while name[pos] == 0xEF and pos >= 0:
-            pos -= 1
-
-        name = name[0:pos+1]
-
-        x = ctstrings.CTString.ct_bytes_to_ascii(name).upper()
-        x = x.replace(' ', '_')
-        print(f"    {x} = 0x{ind:02X}")
-        
-        pos = end+1
     
 
 

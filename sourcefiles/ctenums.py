@@ -212,6 +212,7 @@ boss_loc_dict = {
 
 # Copied and reformatted from Anguirel's list
 class ItemID(StrIntEnum):
+    NONE = 0x00
     WOOD_SWORD = 0x01
     IRON_BLADE = 0x02
     STEELSABER = 0x03
@@ -990,7 +991,7 @@ class EnemyID(StrIntEnum):
     # SLASH = 0x9D
     # SLASH = 0x9E
     # FLEA = 0x9F
-    # FLEA_PLUS = 0xA0
+    FLEA_PLUS_TRIO = 0xA0
     # DALTON = 0xA1
     # DALTON_PLUS = 0xA2
     MUTANT = 0xA3
@@ -998,13 +999,13 @@ class EnemyID(StrIntEnum):
     # SUPER_SLASH = 0xA5
     OZZIE_ZENAN = 0xA6
     OZZIE_FORT = 0xA7
-    # GREAT_OZZIE = 0xA8
+    GREAT_OZZIE = 0xA8
     # HECKRAN = 0xA9
     GIGASAUR = 0xAA
     LEAPER = 0xAB
     FOSSIL_APE = 0xAC
     TANK_HEAD = 0xAD
-    FROG_KING = 0xAE
+    DECEDENT_II = 0xAE
     OCTORIDER = 0xAF
     ZEAL_2_CENTER = 0xB0
     ZEAL_2_LEFT = 0xB1
@@ -1016,7 +1017,7 @@ class EnemyID(StrIntEnum):
     DISPLAY = 0xB7
     # MEGA_MUTANT = 0xB8
     #  = 0xB9
-    # SUPER_SLASH = 0xBA
+    SUPER_SLASH_TRIO = 0xBA
     # FLEA_PLUS = 0xBB
     BLACKTYRANO = 0xBC
     # RUST_TYRANO = 0xBD

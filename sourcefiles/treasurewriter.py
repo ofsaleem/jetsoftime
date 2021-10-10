@@ -353,8 +353,8 @@ alvlconsumables = [0xC3,0xC5]
 class TreasureDist:
 
     def __init__(self, *weight_item_pairs: Tuple[int, list[ItemID]]):
-        print(weight_item_pairs)
-        input()
+        # print(weight_item_pairs)
+        # input()
         self.weight_item_pairs = weight_item_pairs
 
     def get_random_item(self) -> ItemID:
