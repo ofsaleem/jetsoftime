@@ -805,7 +805,7 @@ class EnemyID(StrIntEnum):
     FLEA = 0x9F
     DALTON = 0xA1
     DALTON_PLUS = 0xA2
-    SUPER_SLASH = 0xA5
+    SUPER_SLASH = 0xBA
     HECKRAN = 0xA9
     FLEA_PLUS = 0xBB
     RUST_TYRANO = 0xBD
@@ -996,7 +996,7 @@ class EnemyID(StrIntEnum):
     # DALTON_PLUS = 0xA2
     MUTANT = 0xA3
     METAL_MUTE = 0xA4
-    # SUPER_SLASH = 0xA5
+    SUPER_SLASH_TRIO = 0xA5
     OZZIE_ZENAN = 0xA6
     OZZIE_FORT = 0xA7
     GREAT_OZZIE = 0xA8
@@ -1017,7 +1017,7 @@ class EnemyID(StrIntEnum):
     DISPLAY = 0xB7
     # MEGA_MUTANT = 0xB8
     #  = 0xB9
-    SUPER_SLASH_TRIO = 0xBA
+    # SUPER_SLASH = 0xBA
     # FLEA_PLUS = 0xBB
     BLACKTYRANO = 0xBC
     # RUST_TYRANO = 0xBD
@@ -1085,5 +1085,33 @@ class EnemyID(StrIntEnum):
     MAGUS_NO_NAME = 0xFB
 
 
-    
-    
+class ShopID(StrIntEnum):
+
+    MELCHIOR_FAIR = 0x00
+    TRUCE_MARKET_600 = 0x01
+    TRUCE_MARKET_1000 = 0x02
+    ARRIS_DOME = 0x03
+    MELCHIORS_HUT = 0x04
+    DORINO = 0x05
+    PORRE_600 = 0x06
+    NU_SPECIAL_KAJAR = 0x07
+    IOKA_VILLAGE = 0x08
+    # LAST_VILLAGE_UPDATED is unreachable.  By the time we can access it,
+    # it's already flipped to be a copy of NU_SPECIAL_KAJAR
+    LAST_VILLAGE_UPDATED = 0x09
+    NU_NORMAL_KAJAR = 0x0A
+    ENHASA = 0x0B
+    PORRE_1000 = 0x0C
+    EARTHBOUND_VILLAGE = 0x0D
+    CHORAS_INN_1000 = 0x0E
+    CHORAS_MARKET_600 = 0x0F
+    MILENNIAL_FAIR_ARMOR = 0x10
+    MILLENIAL_FAIR_ITEMS = 0x11
+    EMPTY_12 = 0x12
+    TRANN_DOME = 0x13
+    EMPTY_14 = 0x14
+    MEDINA_MARKET = 0x15
+    FIONAS_SHRINE = 0x16
+    NU_BLACK_OMEN = 0x17
+    # There is room for shops through 0x3F if desired
+

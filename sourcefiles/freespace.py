@@ -415,8 +415,6 @@ class FSRom(BytesIO):
 
         self.seek(0, 2)
         buf_end = self.tell()
-        self.seek(start)
-        BytesIO.write(self, payload)
 
         if end > buf_end:
             if write_mark == FSWriteType.NO_MARK:
@@ -426,6 +424,9 @@ class FSRom(BytesIO):
                 spaceman.extend_end_marker(end, write_mark)
 
         spaceman.mark_block((start, end), write_mark)
+
+        self.seek(start)
+        return BytesIO.write(self, payload)
 
     # writes data to the buffer and marks the space as no longer free.
     # Errors out if there is insufficient space

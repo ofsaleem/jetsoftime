@@ -1,6 +1,78 @@
+from __future__ import annotations
+from io import BytesIO
 import math
 import struct as st
 import random as rand
+
+from byteops import get_value_from_bytes, to_little_endian, to_file_ptr
+from ctenums import ItemID, ShopID
+from ctrom import CTRom
+import treasurewriter as tw
+
+import randoconfig as cfg
+import randosettings as rset
+
+# There are minor changes do the item distributions for shops.
+# low_lvl_consumables: tw has powermeal but not shopwriter
+# good_lvl_items: tw has greendream but not shopwriter
+# hlvlconsumables: tw has tabs but not shopwriter
+low_lvl_items = tw.low_lvl_items
+low_lvl_consumables = tw.low_lvl_consumables
+low_lvl_consumables.remove(ItemID.POWER_MEAL)
+
+passable_lvl_items = tw.passable_lvl_items
+passable_lvl_consumables = tw.passable_lvl_consumables
+mid_lvl_items = tw.mid_lvl_items
+mid_lvl_consumables = tw.mid_lvl_consumables
+good_lvl_items = tw.good_lvl_items
+good_lvl_items.remove(ItemID.GREENDREAM)
+
+good_lvl_consumables = tw.good_lvl_consumables
+high_lvl_items = tw.high_lvl_items
+high_lvl_consumables = tw.high_lvl_consumables
+
+for x in [ItemID.POWER_TAB, ItemID.MAGIC_TAB, ItemID.SPEED_TAB]:
+    high_lvl_consumables.remove(x)
+
+awesome_lvl_items = tw.awesome_lvl_items
+awesome_lvl_consumables = tw.awesome_lvl_consumables
+
+regular_shop_ids = [
+    ShopID.TRUCE_MARKET_600,
+    ShopID.ARRIS_DOME,
+    ShopID.DORINO,
+    ShopID.PORRE_600,
+    ShopID.PORRE_1000,
+    ShopID.CHORAS_INN_1000,
+    ShopID.CHORAS_MARKET_600,
+    ShopID.MILENNIAL_FAIR_ARMOR,
+    ShopID.MILLENIAL_FAIR_ITEMS,
+]
+
+good_shop_ids = [
+    ShopID.TRUCE_MARKET_1000,
+    ShopID.MELCHIORS_HUT,
+    ShopID.IOKA_VILLAGE,
+    ShopID.NU_NORMAL_KAJAR,
+    ShopID.ENHASA,
+    ShopID.EARTHBOUND_VILLAGE,
+    ShopID.TRANN_DOME,
+    ShopID.MEDINA_MARKET,
+    ShopID.FIONAS_SHRINE,
+]
+
+best_shop_ids = [
+    ShopID.NU_SPECIAL_KAJAR,
+    # ShopID.LAST_VILLAGE_UPDATED,  # This shop is actually unused
+    ShopID.NU_BLACK_OMEN,
+]
+
+unused_shop_ids = [
+    ShopID.LAST_VILLAGE_UPDATED,
+    ShopID.EMPTY_12,
+    ShopID.EMPTY_14,
+]
+
 shop_starts = list(range(0xC2C6F,0xC2C9D,2))
 regular_shops = [0xC2C6F,0xC2C73,0xC2C77,0xC2C79,0xC2C85] + list(range(0xC2C89,0xC2C91,2))
 good_shops = [0xC2C71,0xC2C75,0xC2C7D,0xC2C81,0xC2C83,0xC2C87,0xC2C93,0xC2C97,0xC2C99]
@@ -21,6 +93,116 @@ hlvlitems = [0x9A,0x9B,0xA3,0xBA,0x0B,0x0C,0x0D,0x19,0x1A,0x27,0x37,0x38,0x41,0x
 hlvlconsumables = [0xC3,0xC4]
 alvlitems = [0xBB,0x0E,0x53,0x54,0x55,0x28,0x39,0x91,0x86,0x8F,0x6C,0x7A,0x6D,0x6B]
 alvlconsumables = [0xC3,0xC5]
+
+
+def process_rom(ctrom: CTRom, settings: rset.Settings,
+                config: cfg.RandoConfig):
+
+    regular_dist = tw.TreasureDist(
+        (6, low_lvl_consumables + passable_lvl_consumables),
+        (4, passable_lvl_items + mid_lvl_items)
+    )
+    regular_guaranteed = []
+
+    good_dist = tw.TreasureDist(
+        (5, passable_lvl_consumables + mid_lvl_consumables),
+        (5, mid_lvl_items + good_lvl_items)
+    )
+    good_guaranteed = []
+
+    best_dist = tw.TreasureDist(
+        (5, (good_lvl_consumables + high_lvl_consumables +
+             awesome_lvl_consumables)),
+        (5, good_lvl_items + high_lvl_items + awesome_lvl_items)
+    )
+    best_guaranteed = [ItemID.AMULET]
+
+    shop_manager = config.shop_manager
+    shop_manager.set_shop_items(ShopID.MELCHIOR_FAIR,
+                                get_melchior_shop_items())
+
+    shop_types = [regular_shop_ids, good_shop_ids, best_shop_ids]
+    shop_dists = [regular_dist, good_dist, best_dist]
+    shop_guaranteed = [regular_guaranteed, good_guaranteed, best_guaranteed]
+
+    for i in range(len(shop_types)):
+        for shop in shop_types[i]:
+            guaranteed = shop_guaranteed[i]
+            dist = shop_dists[i]
+            items = get_shop_items(guaranteed, dist)
+
+            shop_manager.set_shop_items(shop, items)
+
+    for shop in unused_shop_ids:
+        shop_manager.set_shop_items(shop, [ItemID.MOP])
+
+    # With the whole shop list in hand, you can do some global guarantees
+    # here if desired.  For example, guarantee ethers/midtonics in LW.
+
+    # Modify prices.  Should this be in a separate function?
+    items_to_modify = list(ItemID)
+
+    # Set up the list of items to randomize
+    if settings.shopprices == rset.ShopPrices.MOSTLY_RANDOM:
+        excluded_items = [ItemID.MID_TONIC, ItemID.ETHER, ItemID.HEAL,
+                          ItemID.REVIVE, ItemID.SHELTER]
+        items_to_modify = [item for item in items_to_modify
+                           if item not in excluded_items]
+    elif settings.shopprices == rset.ShopPrices.NORMAL:
+        items_to_modify = []
+
+    # Actually modify the prices
+    for item in items_to_modify:
+        if settings.shopprices in (rset.ShopPrices.FULLY_RANDOM,
+                                   rset.ShopPrices.MOSTLY_RANDOM):
+            price = getRandomPrice()
+        elif settings.shopprices == rset.ShopPrices.FREE:
+            price = 0
+
+        config.price_manager.set_price(item, price)
+
+
+def get_melchior_shop_items():
+
+    swords = [ItemID.FLASHBLADE, ItemID.PEARL_EDGE,
+              ItemID.RUNE_BLADE, ItemID.DEMON_HIT]
+    robo_arms = [ItemID.STONE_ARM, ItemID.DOOMFINGER, ItemID.MAGMA_HAND]
+    guns = [ItemID.RUBY_GUN, ItemID.DREAM_GUN, ItemID.MEGABLAST]
+    bows = [ItemID.SAGE_BOW, ItemID.DREAM_BOW, ItemID.COMETARROW]
+    katanas = [ItemID.FLINT_EDGE, ItemID.DARK_SABER, ItemID.AEON_BLADE]
+
+    item_list = [
+        rand.choice(swords),
+        rand.choice(robo_arms),
+        rand.choice(guns),
+        rand.choice(bows),
+        rand.choice(katanas),
+        ItemID.REVIVE,
+        ItemID.SHELTER
+    ]
+
+    return item_list
+
+
+def get_shop_items(guaranteed_items: list[ItemID], item_dist):
+    shop_items = guaranteed_items[:]
+
+    # potentially shop size should be passed in.  Keep the random isolated.
+    item_count = rand.randrange(3, 9) - len(shop_items)
+
+    for item_index in range(item_count):
+        item = item_dist.get_random_item()
+
+        # Avoid duplicate items.
+        while item in shop_items:
+            item = item_dist.get_random_item()
+
+        shop_items.append(item)
+
+    # Typically better items have a higher index.  The big exception is
+    # that consumables are at the very top.  That's ok though.
+    return sorted(shop_items, reverse=True)
+
 
 def pick_items(shop,rand_num):
     if shop in regular_shops:
@@ -153,6 +335,69 @@ def modify_shop_prices(outfile, flag):
       f.write(st.pack("H", 0))
   
   f.close()
-   
+
+
+def main():
+
+    with open('./roms/jets_test.sfc', 'rb') as infile:
+        rom = bytearray(infile.read())
+
+    # Do a test shop writing.
+    ctrom = CTRom(rom, ignore_checksum=True)
+    # space_manager = ctrom.rom_data.space_manager
+
+    # Set up some safe free blocks.
+    # space_manager.mark_block((0, 0x40FFFF),
+    #                          FSWriteType.MARK_USED)
+    # space_manager.mark_block((0x411007, 0x5B8000),
+    #                          FSWriteType.MARK_FREE)
+    config = cfg.RandoConfig(rom)
+
+    settings = rset.Settings.get_race_presets()
+    settings.shopprices = rset.ShopPrices.MOSTLY_RANDOM
+
+    process_rom(ctrom, settings, config)
+
+    config.shop_manager.print_with_prices(config.price_manager)
+    quit()
+
+    # Turn shop pointers into ShopIDs
+
+    print('best shops:')
+    for x in best_shops:
+        shop_id = (x - 0xC2C6D)//2
+        name = repr(ShopID(shop_id))[1:].split(':')[0]
+        print(f"    {name}")
+
+    print('unused shops:')
+    for x in shop_starts:
+        shop_id = (x - 0xC2C6D)//2
+        if shop_id not in (regular_shop_ids+good_shop_ids+best_shop_ids):
+            name = repr(ShopID(shop_id))[1:].split(':')[0]
+            print(f"    {name}")
+    quit()
+
+    # Checking to make sure the definitions are common across the files
+    tw_items = tw.plvlitems
+    sw_items = plvlitems
+
+    tw_minus_sw = [x for x in tw_items if x not in sw_items]
+    sw_minus_tw = [x for x in sw_items if x not in tw_items]
+
+    print("Treasure but not enemy drop/charm:")
+    for x in tw_minus_sw:
+        print(f"    {ItemID(x)}")
+
+    print("Enemy drop/charm but not item:")
+    for x in sw_minus_tw:
+        print(f"    {ItemID(x)}")
+
+    # Results:
+    # low_lvl_consumables: tw has powermeal but not sw
+    # good_lvl_items: tw has greendream but not sw
+    # hlvlconsumables: tw has tabs but not sw
+
+
 if __name__ == "__main__":
-   randomize_shops("Project.sfc")
+    main()
+    # randomize_shops("Project.sfc")

@@ -2,15 +2,174 @@
 # Each module of the randomizer will get passed the GameConfig object and the
 # flags and update the GameConfig.  Then, the randomizer will write the
 # GameConfig out to the rom.
-
+from __future__ import annotations
 from enum import auto
 
-from byteops import to_little_endian
-from ctenums import ItemID, LocID, TreasureID as TID, CharID
+from byteops import to_little_endian, get_value_from_bytes, to_file_ptr
+from ctenums import ItemID, LocID, TreasureID as TID, CharID, ShopID
 # from ctevent import ScriptManager as SM, Event
 from ctrom import CTRom
 from freespace import FSWriteType  # Only for the test main() code
 import enemystats
+
+
+class PriceManager:
+
+    def __init__(self, rom: bytearray):
+        self.price_dict = dict()
+
+        for item in list(ItemID):
+            price_addr = self.__get_price_addr(item)
+            price = get_value_from_bytes(rom[price_addr:price_addr+2])
+            self.price_dict[item] = price
+            # Note:  In the future we could be adding a per-shop price
+            #        multiplier to go along with the item list.
+
+    def get_price(self, item: ItemID):
+        return self.price_dict[item]
+
+    def set_price(self, item: ItemID, price: int):
+        if price > 0xFFFF:
+            print('Error: price exceeds 0xFFFF.  Not Changing.')
+            input()
+        else:
+            self.price_dict[item] = price
+
+    def write_to_ctrom(self, ctrom: CTRom):
+        rom = ctrom.rom_data
+
+        for item, price in self.price_dict.items():
+            addr = self.__get_price_addr(item)
+            rom.seek(addr)
+            rom.write(to_little_endian(price, 2))
+
+    # Following pointers from original shopwriter
+    @classmethod
+    def __get_price_addr(cls, item: ItemID) -> int:
+        # We're assuming this is all vanilla.  Otherwise we need to pass
+        # a rom in here too.
+
+        item_index = int(item)
+
+        # Different types of items have their price data in different places
+        if item_index < 0x94:
+            # Gear is in 00 (empty) to 0x93 (Mermaid Cap)
+            # 6 byte record, price is 2 bytes, offset 1
+            return 0x0C06A4 + 6*item_index + 1
+        elif item_index < 0xBC:
+            # Accessories in 0x94 (empty) to 0xBB (Prismspecs)
+            # 4 byte record, price is 2 bytes, offset 1
+            return 0x0C0A1C + 4*(item_index-0x94) + 1
+        else:
+            # Consumables + Keys in 0xBC (empty) to 0xE7 (2xFeather)
+            # 3 byte record, price is 2 bytes, offset 1
+            return 0x0C0ABC + 3*(item_index-0xBC) + 1
+
+    def __str__(self):
+        ret = ''
+        for item, price in self.price_dict.items():
+            ret += f"{item}: {price}\n"
+
+        return ret
+
+
+class ShopManager:
+
+    shop_ptr = 0x02DAFD
+    shop_data_bank_ptr = 0x02DB09
+
+    def __init__(self, rom: bytearray):
+
+        shop_data_bank, shop_ptr_start = ShopManager.__get_shop_pointers(rom)
+
+        # print(f"Shop data bank = {self.shop_data_bank:06X}")
+        # print(f"Shop ptr start = {self.shop_ptr_start:06X}")
+
+        # We're using some properties of ShopID here.
+        #  1) ShopID starts from 0x00, and
+        #  2) ShopID contains all values from 0x00 to N-1 where N is
+        #     the number of shops.
+
+        self.shop_dict = dict()
+
+        # The sort shouldn't be necessary, but be explicit.
+        for shop in sorted(list(ShopID)):
+            index = int(shop)
+            ptr_start = shop_ptr_start + 2*index
+            shop_ptr_local = get_value_from_bytes(rom[ptr_start:ptr_start+2])
+            shop_ptr = shop_ptr_local + shop_data_bank
+            shop_ptr = shop_ptr
+
+            pos = shop_ptr
+            self.shop_dict[shop] = []
+
+            # Items in the shop are a 0-terminated list
+            while rom[pos] != 0:
+                # print(ItemID(rom[pos]))
+                self.shop_dict[shop].append(ItemID(rom[pos]))
+                pos += 1
+
+    # Returns start of shop pointers, start of bank of shop data
+    @classmethod
+    def __get_shop_pointers(cls, rom: bytearray):
+        shop_data_bank = to_file_ptr(rom[cls.shop_data_bank_ptr] << 16)
+        shop_ptr_start = \
+            to_file_ptr(
+                get_value_from_bytes(rom[cls.shop_ptr:cls.shop_ptr+3])
+            )
+        return shop_data_bank, shop_ptr_start
+
+    def write_to_ctrom(self, ctrom: CTRom):
+        # The space used/freed by TF isn't available to me.  I just have to
+        # assume that the space currently allotted is enough.
+
+        shop_data_bank, shop_ptr_start = \
+            ShopManager.__get_shop_pointers(ctrom.rom_data.getbuffer())
+
+        rom = ctrom.rom_data
+
+        ptr_loc = shop_ptr_start
+        rom.seek(ptr_loc)
+        data_loc = get_value_from_bytes(rom.read(2)) + shop_data_bank
+
+        max_index = max(self.shop_dict.keys())
+
+        for shop_id in range(max_index+1):
+            shop = ShopID(shop_id)
+
+            rom.seek(ptr_loc)
+            ptr = data_loc % 0x010000
+            ptr_loc += rom.write(to_little_endian(ptr, 2))
+
+            if shop in self.shop_dict.keys():
+                items = bytearray(self.shop_dict[shop]) + b'\x00'
+            else:
+                items = bytearray([ItemID.MOP]) + b'\x00'
+
+            rom.seek(data_loc)
+            data_loc += rom.write(items)
+
+    def set_shop_items(self, shop: ShopID, items: list[ItemID]):
+        self.shop_dict[shop] = items[:]
+
+    def print_with_prices(self, price_manager: PriceManager):
+        print(self.__str__(price_manager))
+
+    def __str__(self, price_manager: PriceManager = None):
+        ret = ''
+        for shop in sorted(self.shop_dict.keys()):
+            ret += str(shop)
+            ret += ':\n'
+            for item in self.shop_dict[shop]:
+                ret += ('    ' + str(item))
+
+                if price_manager is not None:
+                    price = price_manager.get_price(item)
+                    ret += f": {price}"
+
+                ret += '\n'
+
+        return ret
 
 
 # All CharRecruits are script-based
@@ -784,6 +943,8 @@ class RandoConfig:
         }
 
         self.enemy_dict = enemystats.get_stat_dict(rom)
+        self.shop_manager = ShopManager(rom)
+        self.price_manager = PriceManager(rom)
 
 
 def main():
@@ -798,7 +959,22 @@ def main():
                              FSWriteType.MARK_USED)
     space_manager.mark_block((0x411007, 0x5B8000),
                              FSWriteType.MARK_FREE)
-    config = RandoConfig()
+    config = RandoConfig(rom)
+
+    # Try out PriceManager
+    price_manager = PriceManager(rom)
+
+    # Try out ShopManager
+    shop_manager = ShopManager(rom)
+    shop_manager.set_shop_items(ShopID.MELCHIOR_FAIR,
+                                [ItemID.MOP])
+
+    shop_manager.write_to_ctrom(ctrom)
+    shop_manager = ShopManager(ctrom.rom_data.getbuffer())
+
+    shop_manager.print_with_prices(price_manager)
+
+    quit()
 
     cath = config.char_assign_dict[LocID.MANORIA_SANCTUARY]
     cath.held_char = CharID.LUCCA
