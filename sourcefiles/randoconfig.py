@@ -3,16 +3,92 @@
 # flags and update the GameConfig.  Then, the randomizer will write the
 # GameConfig out to the rom.
 from __future__ import annotations
-from enum import auto
 
 from byteops import to_little_endian, get_value_from_bytes, to_file_ptr
-from ctenums import ItemID, LocID, TreasureID as TID, CharID, ShopID
+from ctenums import ItemID, LocID, TreasureID as TID, CharID, ShopID, \
+    RecruitID
 # from ctevent import ScriptManager as SM, Event
 from ctrom import CTRom
 from freespace import FSWriteType  # Only for the test main() code
 import enemystats
+import statcompute
 
 
+class PlayerChar:
+
+    def __init__(self, rom: bytearray, pc_id: CharID,
+                 stat_start: int = 0x0C0000,
+                 hp_growth_start: int = 0x0C25A8,
+                 mp_growth_start: int = 0x0C25C2,
+                 stat_growth_start: int = 0x0C25FA,
+                 xp_thresh_start: int = 0x0C2632,
+                 tp_thresh_start: int = 0x0C26FA):
+
+        self.stats = statcompute.PCStats.stats_from_rom(
+            rom, pc_id, stat_start, hp_growth_start, mp_growth_start,
+            stat_growth_start, xp_thresh_start, tp_thresh_start
+        )
+
+        self.pc_id = pc_id
+
+        # These are for bookkeeping.  They're stored here but the write
+        # is guaranteed elsewhere
+        self.tech_permutation = [x for x in range(8)]
+        self.assigned_char = pc_id
+
+    # Being explicit here that we only write out the stats.
+    def write_stats_to_ctrom(self, ctrom: CTRom,
+                             stat_start: int = 0x0C0000,
+                             hp_growth_start: int = 0x0C25A8,
+                             mp_growth_start: int = 0x0C25C2,
+                             stat_growth_start: int = 0x0C25FA,
+                             tp_thresh_start: int = 0x0C26FA):
+        # TODO: Try to read these x_start pointers from the rom
+        self.stats.write_to_rom(ctrom.rom_data.getbuffer(),
+                                self.pc_id,
+                                stat_start,
+                                hp_growth_start,
+                                mp_growth_start,
+                                stat_growth_start,
+                                tp_thresh_start)
+
+
+# Class that handles data related to PCs.
+# For now it will handle writing stats to the rom.  The other data is mainly
+# for tracking purposes and will be written out by other files.
+# The end goal is for everything PC-related to be managed here.
+class CharManager:
+
+    # TODO: Read all of these pointers from the rom.  On the other hand,
+    # they are unlikely to change (except when charrando moves them to
+    # another block at the last minute).
+    def __init__(self, rom: bytearray,
+                 stat_start: int = 0x0C0000,
+                 hp_growth_start: int = 0x0C258A,
+                 mp_growth_start: int = 0x0C25C2,
+                 stat_growth_start: int = 0xC25FA,
+                 xp_thresh_start: int = 0x0C2632,
+                 tp_thresh_start: int = 0x0C26FA):
+        self.stat_start = stat_start
+        self.hp_growth_start = hp_growth_start
+        self.mp_growth_start = mp_growth_start
+        self.stat_growth_start = stat_growth_start
+        self.xp_thresh_start = xp_thresh_start
+        self.tp_thresh_start = tp_thresh_start
+
+        self.pcs = [
+            PlayerChar(
+                rom, CharID(i), self.stat_start, self.hp_growth_start,
+                self.mp_growth_start, self.stat_growth_start,
+                self.xp_thresh_start, self.tp_thresh_start
+            ) for i in range(7)]
+
+    def write_stats_to_ctrom(self, ctrom: CTRom):
+        for pc in self.pcs:
+            pc.write_stats_to_ctrom(ctrom)
+
+
+# Class that handles storing and manipulating item prices
 class PriceManager:
 
     def __init__(self, rom: bytearray):
@@ -249,6 +325,56 @@ class CharRecruit:
             else:
                 print(f"Error, uncaught command ({cmd.command:02X})")
                 exit()
+
+            pos += len(cmd)
+
+
+class StarterChar:
+
+    def __init__(self,
+                 loc_id: LocID = LocID.LOAD_SCREEN,
+                 object_id: int = 0,
+                 function_id: int = 0,
+                 held_char: CharID = CharID.CRONO,
+                 starter_num=0):
+        self.loc_id = loc_id
+        self.object_id = object_id
+        self.function_id = function_id
+        self.held_char = held_char
+        self.starter_num = starter_num
+
+    def write_to_ctrom(self, ctrom: CTRom):
+        script_manager = ctrom.script_manager
+        script = script_manager.get_script(self.loc_id)
+
+        start = script.get_function_start(self.object_id, self.function_id)
+        end = script.get_function_end(self.object_id, self.function_id)
+
+        num_name_char = 0
+        num_add_party = 0
+
+        pos = start
+        while (num_name_char != self.starter_num+1 or
+               num_add_party != self.starter_num+1):
+
+            # 0xD3 - Add to active party: 1st arg pc_id
+            # 0xC8 - Special Dialog (name): 1st arg pc_id | 0xC0
+            pos, cmd = script.find_command([], pos, end)
+
+            if pos is None:
+                print("Error: Hit end of function before finding character.")
+                exit()
+
+            if cmd.command == 0xD3:
+                if num_add_party == self.starter_num:
+                    script.data[pos+1] = int(self.held_char)
+
+                num_add_party += 1
+            elif cmd.command == 0xC8:
+                if num_name_char == self.starter_num:
+                    script.data[pos+1] = int(self.held_char) | 0xC0
+
+                num_name_char += 1
 
             pos += len(cmd)
 
@@ -910,31 +1036,39 @@ class RandoConfig:
         # the keys can be different since there's some redundancy in the
         # key and the arg to CharRecruit
         self.char_assign_dict = {
-            LocID.MANORIA_SANCTUARY: CharRecruit(
+            RecruitID.STARTER_1: StarterChar(
+                held_char=CharID.CRONO,
+                starter_num=0  # A little bothered by the 0 vs 1 here
+            ),
+            RecruitID.STARTER_2: StarterChar(
+                held_char=CharID.MAGUS,
+                starter_num=1
+            ),
+            RecruitID.CATHEDRAL: CharRecruit(
                 held_char=CharID.LUCCA,
                 loc_id=LocID.MANORIA_SANCTUARY,
                 load_obj_id=0x19,
                 recruit_obj_id=0x19
             ),
-            LocID.GUARDIA_QUEENS_CHAMBER_600: CharRecruit(
+            RecruitID.CASTLE: CharRecruit(
                 held_char=CharID.MARLE,
                 loc_id=LocID.GUARDIA_QUEENS_CHAMBER_600,
                 load_obj_id=0x17,
                 recruit_obj_id=0x18
             ),
-            LocID.FROGS_BURROW: CharRecruit(
+            RecruitID.FROGS_BURROW: CharRecruit(
                 held_char=CharID.FROG,
                 loc_id=LocID.FROGS_BURROW,
                 load_obj_id=0x0F,
                 recruit_obj_id=0x0F
             ),
-            LocID.DACTYL_NEST_SUMMIT: CharRecruit(
+            RecruitID.DACTYL_NEST: CharRecruit(
                 held_char=CharID.AYLA,
                 loc_id=LocID.DACTYL_NEST_SUMMIT,
                 load_obj_id=0x0D,
                 recruit_obj_id=0x0D
             ),
-            LocID.PROTO_DOME: CharRecruit(
+            RecruitID.PROTO_DOME: CharRecruit(
                 held_char=CharID.ROBO,
                 loc_id=LocID.PROTO_DOME,
                 load_obj_id=0x18,
@@ -945,6 +1079,7 @@ class RandoConfig:
         self.enemy_dict = enemystats.get_stat_dict(rom)
         self.shop_manager = ShopManager(rom)
         self.price_manager = PriceManager(rom)
+        self.char_manager = CharManager(rom)
 
 
 def main():

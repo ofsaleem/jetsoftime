@@ -118,6 +118,7 @@ class LocID(StrIntEnum):
     DEATH_PEAK_GUARDIAN_SPAWN = 0x1EF
 
     # Character Recruitment Locations
+    LOAD_SCREEN = 0x00
     MANORIA_SANCTUARY = 0x81
     GUARDIA_QUEENS_CHAMBER_600 = 0x7A
     PROTO_DOME = 0xE2
@@ -378,7 +379,7 @@ class ItemID(StrIntEnum):
     FLEA_VEST = 0xB5
     MAGIC_SEAL = 0xB6
     POWER_SEAL = 0xB7
-    RELIC = 0xB8
+    ROBORIBBON = 0xB8
     SERAPHSONG = 0xB9
     SUN_SHADES = 0xBA
     PRISMSPECS = 0xBB
@@ -425,6 +426,14 @@ class ItemID(StrIntEnum):
     FANGS_2 = 0xE5
     HORNS_2 = 0xE6
     FEATHERS_2 = 0xE7
+
+    @classmethod
+    def get_key_items(cls):
+        return [cls.TOMAS_POP, cls.BENT_HILT, cls.BENT_SWORD,
+                cls.DREAMSTONE, cls.RUBY_KNIFE, cls.GATE_KEY,
+                cls.GATE_KEY, cls.PENDANT, cls.JERKY, cls.MOON_STONE,
+                cls.PRISMSHARD, cls.MASAMUNE_2, cls.CLONE,
+                cls.C_TRIGGER, cls.HERO_MEDAL, cls.ROBORIBBON]
 
 
 # Extracted from Anguirel's Chronosanity code
@@ -1115,3 +1124,11 @@ class ShopID(StrIntEnum):
     NU_BLACK_OMEN = 0x17
     # There is room for shops through 0x3F if desired
 
+class RecruitID(StrIntEnum):
+    STARTER_1 = auto()
+    STARTER_2 = auto()
+    CATHEDRAL = auto()
+    CASTLE = auto()
+    DACTYL_NEST = auto()
+    PROTO_DOME = auto()
+    FROGS_BURROW = auto()
