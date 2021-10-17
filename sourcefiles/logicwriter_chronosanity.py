@@ -1,13 +1,17 @@
 # Python libraries
+from __future__ import annotations
 import enum
 import random as rand
 import struct as st
 
 # jets of time libraries
-import characterwriter as chars
 import logicfactory
 import logictypes
 import treasurewriter as treasure
+
+from ctrom import CTRom
+import randoconfig as cfg
+import randosettings as rset
 
 #
 # This script file implements the Chronosanity logic.
@@ -27,7 +31,7 @@ locationGroups = []
 #
 # return: List of all available LocationGroups
 #
-def getAvailableLocations(game):
+def getAvailableLocations(game: logictypes.Game) -> list[logictypes.Location]:
   # Have the game object update what characters are available based on the
   # currently available items and time periods.
   game.updateAvailableCharacters()
@@ -47,7 +51,7 @@ def getAvailableLocations(game):
 # Given a list of LocationGroups, get a random location.
 #
 # param: groups - List of LocationGroups
-# 
+#
 # return: The LocationGroup the Location was chosen from
 # return: A Location randomly chosen from the groups list
 #
@@ -84,6 +88,9 @@ def getRandomLocation(groups):
 #
 def getShuffledKeyItemList(weightedList):
   tempList = weightedList.copy()
+
+  # In the shuffle, higher weighted items have a better chance of appearing
+  # before lower weighted items.
   rand.shuffle(tempList)
   
   keyItemList = []
@@ -107,15 +114,16 @@ def getShuffledKeyItemList(weightedList):
 def determineKeyItemPlacement(gameConfig):
   global locationGroups
   locationGroups = gameConfig.getLocations()
-  game = gameConfig.getGame()
+  # game = gameConfig.getGame()
   remainingKeyItems = gameConfig.getKeyItemList()
   chosenLocations = []
-  return determineKeyItemPlacement_impl(chosenLocations, remainingKeyItems, game)
+  return determineKeyItemPlacement_impl(chosenLocations,
+                                        remainingKeyItems, gameConfig)
 # end place_key_items
 
 
 #
-# NOTE: Do not call this function directly. This will be called 
+# NOTE: Do not call this function directly. This will be called
 #       by determineKeyItemPlacement after setting up the parameters
 #       needed by this function.
 #
@@ -134,19 +142,28 @@ def determineKeyItemPlacement(gameConfig):
 #
 # param: chosenLocations - List of locations already chosen for key items
 # param: remainingKeyItems - List of key items remaining to be placed
-# param: game - Game object used to determine logic
+# param: gameConfig - GameConfig object used to determine logic.  In particular
+#                     this contains a Game object which determines the logic
+#                     while the GameConfig itself has rules for how the keyItem
+#                     items may change over time.
+# TODO:  Should this pass two parameters? Game and updateKeyItems function?
+#        It's weird using the Game member of GameConfig.
 #
 # return: A tuple containing:
-#             A Boolean indicating whether or not key item placement was successful
+#             A Boolean indicating whether or not key item placement was
+#             successful
+#
 #             A list of locations with key items assigned
 #
-def determineKeyItemPlacement_impl(chosenLocations, remainingKeyItems, game):
+def determineKeyItemPlacement_impl(chosenLocations,
+                                   remainingKeyItems,
+                                   gameConfig):
   if len(remainingKeyItems) == 0:
     # We've placed all key items.  This is our breakout condition
     return True, chosenLocations
   else:
     # We still have key items to place.
-    availableLocations = getAvailableLocations(game)
+    availableLocations = getAvailableLocations(gameConfig.getGame())
     if len(availableLocations) == 0:
       # This item configuration is not completable. 
       return False, chosenLocations
@@ -161,37 +178,29 @@ def determineKeyItemPlacement_impl(chosenLocations, remainingKeyItems, game):
       locationGroup.decayWeight()
       chosenLocations.append(location)
       
-      # If 2/3 of the key items have been placed
-      # then remove the key item bias from the remaining list.
-      # This is to slightly reduce the occurrence of the lowest weighted
-      # items from showing up dispraportionately on extremely late checks
-      # like Mount Woe or the Guardia Treasury.
-      # TODO - Move this out of the general item placement code and into chronosanity specific code (gameconfig?)
-      if game.getKeyItemCount() == 10:
-        newList = []
-        for key in remainingKeyItems:
-          if not key in newList:
-            newList.append(key)
-        remainingKeyItems = newList
-      
+      # Sometimes key item bias is removed after N checks
+      gameConfig.updateKeyItems(remainingKeyItems)
+
       # Use the weighted key item list to get a list of key items
       # that we can loop through and attempt to place.
       localKeyItemList = getShuffledKeyItemList(remainingKeyItems)
       for keyItem in localKeyItemList:
         # Try placing this key item and then recurse
         location.setKeyItem(keyItem)
-        game.addKeyItem(keyItem)
+        gameConfig.getGame().addKeyItem(keyItem)
         
         newKeyItemList = [x for x in remainingKeyItems if x != keyItem]
         # recurse and try to place the next key item.
         keyItemConfirmed, returnedChosenLocations = \
-            determineKeyItemPlacement_impl(chosenLocations, newKeyItemList, game)
+            determineKeyItemPlacement_impl(chosenLocations,
+                                           newKeyItemList,
+                                           gameConfig)
         
         if keyItemConfirmed:
           # We're unwinding the recursion here, all key items are placed.
           return keyItemConfirmed, returnedChosenLocations
         else:
-          game.removeKeyItem(keyItem)
+          gameConfig.getGame().removeKeyItem(keyItem)
       # end keyItem loop
       
       # If we get here, we failed to place an item.  Undo location modifications
@@ -216,119 +225,73 @@ def writeSpoilerLog(chosenLocations, charLocations):
   
   spoilerLog.write("Key ItemLocations:\n")
   for location in chosenLocations:
-    spoilerLog.write("  " + location.getName() + ": " + location.getKeyItem().name + "\n")
-  
+    spoilerLog.write("  " +
+                     location.getName() + ": " +
+                     location.getKeyItem().name + "\n")
+
   # Write the character locations to the spoiler log
   spoilerLog.write("\n\nCharacter Locations:\n")
   for loc, char in charLocations.items():
-    character = logictypes.Characters(char[0])
-    spoilerLog.write("  " + loc + ": " + character.name + "\n")
+    character = char.held_char
+    spoilerLog.write("  " + str(loc) + ": " + str(character) + "\n")
   spoilerLog.close()
 
 
-#
-# Get a random treasure for a baseline location.
-# This function uses the loot selection algorithm from treasures.py.
-# Loot tiers are set as part of the location construction.
-#
-# param: location - BaselineLocation that needs loot 
-#
-# return: The item code for a random treasure
-#
-def getRandomTreasure(location):
-  treasureCode = 0;
-  
-  lootTier = location.getLootTier()
-  # loot selection algorithm stolen from treasurewriter.py
-  rand_num = rand.randrange(0,11,1)
-  # Mid tier loot - early checks
-  if lootTier == logictypes.LootTiers.Mid:
-    if rand_num > 5:
-      treasureCode = rand.choice(treasure.plvlconsumables + \
-                                 treasure.mlvlconsumables)
-    else:
-      rand_num = rand.randrange(0,100,1)
-      if rand_num > 74:
-        if rand_num > 94:
-          treasureCode = rand.choice(treasure.hlvlitems)
-        else:
-          treasureCode = rand.choice(treasure.glvlitems)
-      else:
-        treasureCode = rand.choice(treasure.mlvlitems)
-        
-  # Mid-high tier loot - moderately gated or more difficult checks
-  elif lootTier == logictypes.LootTiers.MidHigh:
-    if rand_num > 5:
-      treasureCode = rand.choice(treasure.mlvlconsumables + \
-                                 treasure.glvlconsumables)
-    else:
-      rand_num = rand.randrange(0,100,1)
-      if rand_num > 74:
-        if rand_num > 94:
-          treasureCode = rand.choice(treasure.alvlitems)
-        else:
-          treasureCode = rand.choice(treasure.hlvlitems)
-      else:
-        treasureCode = rand.choice(treasure.glvlitems)
-  
-  # High tier loot - Late or difficult checks
-  elif lootTier == logictypes.LootTiers.High:
-    if rand_num > 6:
-      treasureCode = rand.choice(treasure.glvlconsumables + \
-                                 treasure.hlvlconsumables + \
-                                 treasure.alvlconsumables)
-    else:
-      rand_num = rand.randrange(0,100,1)
-      if rand_num > 74:
-        treasureCode = rand.choice(treasure.alvlitems)
-      else:
-        treasureCode = rand.choice(treasure.glvlitems + \
-                                   treasure.hlvlitems)
-                                
-  return treasureCode
-# end getRandomTreasure function
-    
-   
 #
 # Determine key item placements and write them to the provided ROM file.
 # Additionally, a spoiler log is written that lists where the key items and
 # characters were placed.
 #
-# param: outFile - File name of the output ROM
-# param: charLocations - Dictionary of character locations from characterwriter.py
-# param: lockedChars - Whether or not the locked characters flag is selected
-# param: earlyPendant - Whether or not the early pendant charge flag is selected
-# param: lostWorlds - Whether or not the Lost Worlds flag is selected
+# param: settings - randomizer settings including gameflags (rset.Settings)
+# param: config - currently determined randomizer output (cfg.RandoConfig)
 #
-def writeKeyItems(outFile, charLocations, lockedChars, earlyPendant, lostWorlds):
-  # Get a game configuration for the provided flags
-  gameConfig = logicfactory.getGameConfig(True, lostWorlds, earlyPendant, lockedChars, charLocations)
+def commitKeyItems(settings: rset.Settings,
+                   config: cfg.RandoConfig):
 
-  # Determine placements for the key items
-  success, chosenLocations = determineKeyItemPlacement(gameConfig)
-  
-  if not success:
-    print("Unable to place key items.")
-    return
-  
-  # Write key items to their locations in the ROM.
-  romFile = open(outFile, "r+b")
-  for location in chosenLocations:
-    location.writeKeyItem(romFile)
-  
-  # Go through any baseline locations not assigned an item and place a 
-  # piece of treasure. Treasure quality is based on the location's loot tier.
-  for locationGroup in locationGroups:
-    for location in locationGroup.getLocations():
-      if type(location) == logictypes.BaselineLocation and (not location in chosenLocations):
-        # This is a baseline location without a key item.  
-        # Assign a piece of treasure.
-        treasureCode = getRandomTreasure(location)
-        location.writeTreasure(treasureCode, romFile)
-  
-  romFile.close()
-  
-  writeSpoilerLog(chosenLocations, charLocations)
-  
-# End writeKeyItems function
+    charLocations = config.char_assign_dict
 
+    # Get a game configuration for the provided flags
+    gameConfig = logicfactory.getGameConfig(settings, config)
+
+    # Determine placements for the key items
+    success, chosenLocations = determineKeyItemPlacement(gameConfig)
+
+    if not success:
+        print("Unable to place key items.")
+        return
+
+    # Write key items to the config
+    for location in chosenLocations:
+        location.writeKeyItem(config)
+
+    # Go through any baseline locations not assigned an item and place a 
+    # piece of treasure. Treasure quality is based on the location's loot tier.
+    for locationGroup in locationGroups:
+        for location in locationGroup.getLocations():
+            if type(location) == logictypes.BaselineLocation and \
+               (location not in chosenLocations):
+
+                # This is a baseline location without a key item.  
+                # Assign a piece of treasure.
+                dist = treasure.get_treasure_distribution(settings,
+                                                          location.lootTier)
+                treasureCode = dist.get_random_item()
+                location.writeTreasure(treasureCode, config)
+
+    writeSpoilerLog(chosenLocations, charLocations)
+
+
+def main():
+    with open('./roms/jets_test.sfc', 'rb') as infile:
+        rom = bytearray(infile.read())
+
+    settings = rset.Settings.get_lost_worlds_presets()
+    settings.gameflags |= rset.GameFlags.CHRONOSANITY
+
+    config = cfg.RandoConfig(rom)
+    commitKeyItems(settings, config)
+    pass
+
+
+if __name__ == '__main__':
+    main()
