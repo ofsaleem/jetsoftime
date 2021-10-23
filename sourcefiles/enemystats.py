@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from io import BufferedWriter
+from io import BufferedRWPair
 
 from byteops import get_value_from_bytes, to_little_endian
 import ctstrings
@@ -47,8 +47,8 @@ class EnemyStats:
 
         xp = get_value_from_bytes(rom[reward_addr:reward_addr+2])
         gp = get_value_from_bytes(rom[reward_addr+2:reward_addr+4])
-        drop_item = rom[reward_addr+4]
-        charm_item = rom[reward_addr+5]
+        drop_item = ctenums.ItemID(rom[reward_addr+4])
+        charm_item = ctenums.ItemID(rom[reward_addr+5])
         tp = rom[reward_addr+6]
 
         # enemy name starts at 0x0C6500
@@ -61,7 +61,10 @@ class EnemyStats:
                           xp, gp, drop_item, charm_item, tp, can_sightscope,
                           name)
 
-    def write_to_stream(self, stream: BufferedWriter, enemy_id: int):
+    # The stream will just about always be a BytesIO from CTRom.
+    # Since we don't have all of the extra flags in EnemyStats, we need
+    # to read and modify the flags, hence BufferedRWPair.
+    def write_to_stream(self, stream: BufferedRWPair, enemy_id: int):
         # enemy stat data is a 23 byte structure beginning at 0x0C4700
         stat_addr = 0x0C4700 + 23*enemy_id
 
@@ -81,17 +84,17 @@ class EnemyStats:
 
         stream.seek(stat_addr + 0x15)
         flags = stream.read()[0]
+        # 0x02 is the "sightscope fails" flag.
         if self.can_sightscope:
-            flags |= 0x2
+            flags &= 0xFD  # Unset the flag
 
-            # The name doesn't show up unless this is set to 0.  It controls
-            # whether the enemy's name appears when targeted.
+            # The name/hp doesn't show up unless the following is set to 0.
             stream.seek(0x21DE80+enemy_id)
-            stream.write(bytes([0]))
+            stream.write(b'\x00')
         else:
-            flags &= 0xFD
+            flags |= 0x02
 
-        stream.seek(-1, 1)
+        stream.seek(stat_addr + 0x15)
         stream.write(bytes([flags]))
 
         # enemy rewards data is a 7 byte structure beginning at 0x0C5E00
