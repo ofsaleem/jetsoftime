@@ -3,10 +3,13 @@
 # flags and update the GameConfig.  Then, the randomizer will write the
 # GameConfig out to the rom.
 from __future__ import annotations
+from io import BufferedWriter
 
 from byteops import to_little_endian, get_value_from_bytes, to_file_ptr
+
+from bossdata import get_boss_data_dict
 from ctenums import ItemID, LocID, TreasureID as TID, CharID, ShopID, \
-    RecruitID
+    RecruitID, BossID
 # from ctevent import ScriptManager as SM, Event
 from ctrom import CTRom
 from freespace import FSWriteType  # Only for the test main() code
@@ -1076,10 +1079,86 @@ class RandoConfig:
             )
         }
 
+        self.boss_assign_dict = {
+            LocID.PRISON_CATWALKS: BossID.DRAGON_TANK,
+            LocID.BLACK_OMEN_ELDER_SPAWN: BossID.ELDER_SPAWN,
+            LocID.MAGUS_CASTLE_FLEA: BossID.FLEA,
+            LocID.OZZIES_FORT_FLEA_PLUS: BossID.FLEA_PLUS,
+            LocID.MT_WOE_SUMMIT: BossID.GIGA_GAIA,
+            LocID.BLACK_OMEN_GIGA_MUTANT: BossID.GIGA_MUTANT,
+            LocID.ZEAL_PALACE_THRONE_NIGHT: BossID.GOLEM,
+            LocID.ARRIS_DOME: BossID.GUARDIAN,
+            LocID.HECKRAN_CAVE_NEW: BossID.HECKRAN,
+            LocID.DEATH_PEAK_GUARDIAN_SPAWN: BossID.LAVOS_SPAWN,
+            LocID.CAVE_OF_MASAMUNE: BossID.MASA_MUNE,
+            LocID.GENO_DOME_MAINFRAME: BossID.MOTHER_BRAIN,
+            LocID.REPTITE_LAIR_AZALA_ROOM: BossID.NIZBEL,
+            LocID.TYRANO_LAIR_NIZBEL: BossID.NIZBEL_2,
+            LocID.SUNKEN_DESERT_DEVOURER: BossID.RETINITE,
+            LocID.GIANTS_CLAW_TYRANO: BossID.RUST_TYRANO,
+            LocID.MAGUS_CASTLE_SLASH: BossID.SLASH_SWORD,
+            LocID.SUN_PALACE: BossID.SON_OF_SUN,
+            LocID.OZZIES_FORT_SUPER_SLASH: BossID.SUPER_SLASH,
+            LocID.BLACK_OMEN_TERRA_MUTANT: BossID.TERRA_MUTANT,
+            LocID.OCEAN_PALACE_TWIN_GOLEM: BossID.TWIN_GOLEM,
+            LocID.MANORIA_COMMAND: BossID.YAKRA,
+            LocID.KINGS_TRIAL_NEW: BossID.YAKRA_XIII,
+            LocID.ZENAN_BRIDGE: BossID.ZOMBOR
+        }
+
+        self.boss_data_dict = get_boss_data_dict(rom)
+
         self.enemy_dict = enemystats.get_stat_dict(rom)
         self.shop_manager = ShopManager(rom)
         self.price_manager = PriceManager(rom)
         self.char_manager = CharManager(rom)
+
+    def write_to_ctrom(self, ctrom: CTRom):
+        # Write enemies out
+        for enemy_id, stats in self.enemy_dict.items():
+            stats.write_to_stream(ctrom.rom_data, enemy_id)
+
+        # Write treasures out
+        for treasure in self.treasure_assign_dict.values():
+            treasure.write_to_ctrom(ctrom)
+
+        # Write shops out
+        self.shop_manager.write_to_ctrom(ctrom)
+
+        # Write prices out
+        self.price_manager.write_to_ctrom(ctrom)
+
+        # Write characters out
+        # Recruitment spots
+        for character in self.char_assign_dict.values():
+            character.write_to_ctrom(ctrom)
+
+        # Stats
+        self.char_manager.write_stats_to_ctrom(ctrom)
+
+        # TODO: duplicate character assignments
+        # TODO: tech rando
+
+    def write_spoiler_log(self, filename):
+        with open(filename, 'w') as outfile:
+            outfile.write('Treasures:\n')
+
+            for treasure_loc in self.treasure_assign_dict.keys():
+                outfile.write(
+                    f"{treasure_loc}: "
+                    f"{self.treasure_assign_dict[treasure_loc].held_item}\n"
+                )
+
+            outfile.write('\n\nShops and Prices:\n')
+            outfile.write(f"{self.shop_manager.__str__(self.price_manager)}\n")
+            outfile.write('Prices\n')
+            outfile.write(f"{self.price_manager}\n")
+
+    def write_to_stream(self, stream: BufferedWriter):
+
+        # Write enemies out
+        for key, value in self.enemy_dict.items():
+            value.write_to_stream(stream, key)
 
 
 def main():
