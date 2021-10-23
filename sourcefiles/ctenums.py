@@ -43,6 +43,12 @@ class BossID(StrIntEnum):
     YAKRA_XIII = auto()
     ZOMBOR = auto()
 
+    # Non-bossrando bosses
+    MOTHER_BRAIN = auto()
+    DRAGON_TANK = auto()
+    GIGA_GAIA = auto()
+    GUARDIAN = auto()
+
     @classmethod
     def get_extra_bosses(cls):
         return (
@@ -95,7 +101,7 @@ class CharID(StrIntEnum):
 
 
 class LocID(StrIntEnum):
-    # Boss Locations
+    # Boss Rando Locations
     BLACK_OMEN_ELDER_SPAWN = 0x60
     ZENAN_BRIDGE = 0x87
     CAVE_OF_MASAMUNE = 0x97
@@ -117,6 +123,12 @@ class LocID(StrIntEnum):
     OCEAN_PALACE_TWIN_GOLEM = 0x19E
     DEATH_PEAK_GUARDIAN_SPAWN = 0x1EF
 
+    # Additional Boss locations
+    ARRIS_DOME_GUARDIAN_CHAMBER = 0xDB
+    # GENO_DOME MAINFRAME = 0x10C  # Defined for treasures elsewhere
+    PRISON_CATWALKS = 0x1C
+    MT_WOE_SUMMIT = 0x18D
+
     # Character Recruitment Locations
     LOAD_SCREEN = 0x00
     MANORIA_SANCTUARY = 0x81
@@ -126,7 +138,7 @@ class LocID(StrIntEnum):
     FROGS_BURROW = 0x8D
 
     # Additional Key Item Locations
-    MT_WOE_SUMMIT = 0x18D
+    # MT_WOE_SUMMIT = 0x18D  # defined as boss location
     FIONAS_SHRINE = 0x39
     ARRIS_DOME = 0xD6
     GENO_DOME_MAINFRAME = 0x10C
@@ -183,6 +195,36 @@ class LocID(StrIntEnum):
             cls.BLACK_OMEN_TERRA_MUTANT,
             cls.ZEAL_PALACE_THRONE_NIGHT,
             cls.OCEAN_PALACE_TWIN_GOLEM,
+            cls.DEATH_PEAK_GUARDIAN_SPAWN
+        ]
+
+    @classmethod
+    def get_one_spot_boss_locations(cls):
+        return[
+            cls.CAVE_OF_MASAMUNE,
+            cls.SUNKEN_DESERT_DEVOURER,
+            cls.MAGUS_CASTLE_SLASH,
+            cls.MAGUS_CASTLE_FLEA,
+            cls.OZZIES_FORT_FLEA_PLUS,
+            cls.OZZIES_FORT_SUPER_SLASH,
+            cls.HECKRAN_CAVE_NEW,
+            cls.KINGS_TRIAL_NEW,
+            cls.GIANTS_CLAW_TYRANO,
+            cls.MANORIA_COMMAND,
+            cls.SUN_PALACE,
+            cls.REPTITE_LAIR_AZALA_ROOM,
+            cls.TYRANO_LAIR_NIZBEL,
+            cls.ZEAL_PALACE_THRONE_NIGHT,
+            cls.OCEAN_PALACE_TWIN_GOLEM,
+        ]
+
+    @classmethod
+    def get_two_spot_boss_locations(cls):
+        return[
+            cls.BLACK_OMEN_ELDER_SPAWN,
+            cls.ZENAN_BRIDGE,
+            cls.BLACK_OMEN_GIGA_MUTANT,
+            cls.BLACK_OMEN_TERRA_MUTANT,
             cls.DEATH_PEAK_GUARDIAN_SPAWN
         ]
 

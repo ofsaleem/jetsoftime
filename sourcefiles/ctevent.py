@@ -9,7 +9,7 @@ from byteops import get_value_from_bytes, to_little_endian, to_file_ptr, \
 import ctstrings
 from eventcommand import EventCommand as EC, get_command, FuncSync
 from eventfunction import EventFunction as EF
-from freespace import FreeSpace as FS, FSRom
+from freespace import FreeSpace as FS, FSRom, FSWriteType 
 
 
 def get_compressed_script(rom, event_id):
@@ -160,12 +160,12 @@ class Event:
 
         # Write the pointers
         for i in range(len(script.strings)):
-            fsrom.write(to_little_endian(str_pos, 2))
+            fsrom.write(to_little_endian(str_pos, 2), FSWriteType.MARK_USED)
             str_pos += len(script.strings[i])
 
         # Write the strings immediately afterwards
         for x in script.strings:
-            fsrom.write(x)
+            fsrom.write(x, FSWriteType.MARK_USED)
 
         # Now we need to go into the script and update the string index
         string_index_b = to_little_endian(to_rom_ptr(string_index), 3)
@@ -202,7 +202,7 @@ class Event:
         script_ptr = fsrom.get_free_addr(len(compr_event))
 
         fsrom.seek(script_ptr)
-        fsrom.write(compr_event)
+        fsrom.write(compr_event, FSWriteType.MARK_USED)
 
         # Now write the location's pointer
         # Location data begins at 0x360000.
@@ -1279,12 +1279,13 @@ class ScriptManager:
 
             # Write the pointers
             for i in range(len(script.strings)):
-                self.fsrom.write(to_little_endian(str_pos, 2))
+                self.fsrom.write(to_little_endian(str_pos, 2),
+                                 FSWriteType.MARK_USED)
                 str_pos += len(script.strings[i])
 
             # Write the strings immediately afterwards
             for x in script.strings:
-                self.fsrom.write(x)
+                self.fsrom.write(x, FSWriteType.MARK_USED)
 
             # script.set_string_index(to_rom_ptr(string_index))
 
@@ -1293,7 +1294,7 @@ class ScriptManager:
         script_ptr = spaceman.get_free_addr(len(compr_event))
 
         self.fsrom.seek(script_ptr)
-        self.fsrom.write(compr_event)
+        self.fsrom.write(compr_event, FSWriteType.MARK_USED)
 
         # Now write the location's pointer
         event_ind_st = self.loc_data_ptr + 14*loc_id + 8
