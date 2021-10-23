@@ -355,7 +355,7 @@ def duplicate_location_data(fsrom: FS, loc_id, dup_loc_id):
     orig_data.write_to_rom(fsrom.getbuffer(), dup_loc_id)
 
 
-if __name__ == '__main__':
+def main():
     with open('jets_test.sfc', 'rb') as infile:
         rom = bytearray(infile.read())
 
@@ -373,3 +373,7 @@ if __name__ == '__main__':
     with open('jets_test_out.sfc', 'wb') as outfile:
         fsrom.seek(0)
         outfile.write(fsrom.read())
+
+
+if __name__ == '__main__':
+    main()
