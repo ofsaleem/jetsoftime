@@ -1,259 +1,291 @@
-import struct as st
+from __future__ import annotations
+from ctenums import EnemyID, TreasureID as TID, LocID, ItemID, \
+    RecruitID, CharID
 
-def scale_bosses(characters,key_locations,locked_characters,outfile):
-  #Order of stats: HP, Level, Magic, Magic Defense, Offense, Defense, Experience, Gold, xTech Points
-  global retinite_core
-  retinite_core = [0xC4C36,0xC4C38,0xC4C40,0xC4C43,0xC4C44,0xC4C45,0xC5F96,0xC5F98,0xC5F9C]
-  global retinite_legs
-  retinite_legs = [0xC5743,0xC5745,0xC574D,0xC5750,0xC5751,0xC5752,0xC62F3,"",0xC62F9]
-  global retinite_head
-  retinite_head = [0xC575A,0xC575C,0xC5764,0xC5767,0xC5768,0xC5769,0xC62FA,"",0xC6300]
-  global display
-  display = ["",0xC5773,0xC577B,0xC577E,0xC577F,0xC5780]
-  global motherbrain
-  motherbrain = [0xC5812,0xC5814,0xC581C,0xC581F,0xC5820,0xC5821,0xC6332,0xC6334,0xC6338]
-  global yakraxiii
-  yakraxiii = [0xC58E1,0xC58E3,0xC58EB,0xC58EE,0xC58EF,0xC58F0,0xC6371,0xC6373,0xC6377]
-  global dragon_tank
-  dragon_tank = [0xC5435,0xC5437,0xC543F,0xC5442,0xC5443,0xC5444,0xC6205,0xC6207,0xC620B]
-  global dragon_wheel
-  dragon_wheel = [0xC544C,0xC544E,0xC5456,0xC5459,0xC545A,0xC545B]
-  global dragon_head
-  dragon_head = [0xC568B,0xC568D,0xC5695,0xC5698,0xC5699,0xC569A]
-  global giga_gaia
-  giga_gaia = [0xC59C7,0xC59C9,0xC59D1,0xC59D4,0xC59D5,0xC59D6,0xC63B7,0xC63B9,0xC63BD]
-  global rusttyrano 
-  rusttyrano = [0xC57FB,0xC57FD,0xC5805,0xC5808,0xC5809,0xC580A,0xC632B,0xC632D,0xC6331]
-  global nizbel
-  nizbel = [0xC54ED,0xC54EF,0xC54F7,0xC54FA,0xC54FB,0xC54FC,0xC623D,0xC623F,0xC6243]
-  global gaia_right
-  gaia_right = [0xC59DE,0xC59E0,0xC59E8,0xC59EB,0xC59EC,0xC59ED]
-  global gaia_left
-  gaia_left = [0xC59F5,0xC59F7,0xC59FF,0xC5A02,0xC5A03,0xC5A04]
-  global bit
-  bit = [0xC5999,0xC599B,0xC59A3,0xC59A6,0xC59A7,0xC59A8]
-  global guardian
-  guardian = [0xC5A0C,0xC5A0E,0xC5A16,0xC5A19,0xC5A1A,0xC5A1B,0xC63CC,0xC63CE,0xC63D2]
-  global sonofsun
-  sonofsun = ["",0xC5D1C,0xC5D24,"","","",0xC64BA,0xC64BC,0xC64C0]
-  global sos_flame
-  sos_flame = ["",0xC5D33,0xC5D3B,"","",""]
-  global rseries
-  rseries = [0xC5D48,0xC5D4A,0xC5D52,0xC5D55,0xC5D56,0xC5D57,0xC64C8,0xC64CA,0xC64CE]
-  global dtankpower
-  dtankpower = 0
-  global nizbelpower
-  nizbelpower = 0
-  global desertpower
-  desertpower = 0
-  global rustpower  
-  rustpower = 0
-  global guardianpower
-  guardianpower = 0
-  global sunpower
-  sunpower = 0 
-  global motherpower
-  motherpower = 0
-  global gigapower
-  gigapower = 0
-  global yakraxiiipower
-  yakraxiiipower = 0
-  global rseriespower
-  rseriespower = 0
-  important_keys = ["knife","clone","trigger"]
-  set_power(key_locations,important_keys)
-  if locked_characters == "Y":
-     if (characters ["proto"] == "Robo" or characters ["proto"] == "Ayla"):
-        rseriespower = 1
-     if (characters ["proto"] == "Chrono" or characters ["proto"] == "Magus"):
-        rseriespower = 2
-  f = open(outfile,"r+b")
-  scale_stats(rustpower,rusttyrano,f)
-  scale_stats(dtankpower,dragon_tank,f)
-  scale_stats(dtankpower,dragon_wheel,f)
-  scale_stats(dtankpower,dragon_head,f)
-  scale_stats(sunpower,sonofsun,f)
-  scale_stats(sunpower,sos_flame,f)
-  scale_stats(nizbelpower,nizbel,f)
-  scale_stats(desertpower,retinite_core,f)
-  scale_stats(desertpower,retinite_head,f)
-  scale_stats(desertpower,retinite_legs,f)
-  scale_stats(yakraxiiipower,yakraxiii,f)
-  scale_stats(guardianpower,guardian,f)
-  scale_stats(guardianpower,bit,f)
-  scale_stats(motherpower,motherbrain,f)
-  scale_stats(motherpower,display,f)
-  scale_stats(rseriespower,rseries,f)
-  scale_stats(gigapower,giga_gaia,f)
-  scale_stats(gigapower,gaia_left,f)
-  scale_stats(gigapower,gaia_right,f)
-  f.close()
-def set_power(locations,important_keys,rank = 3):
-    futurelocs = ["arris","geno","sun"]
-    importantlocs = []
-    global dtankpower
-    global guardianpower
-    global motherpower
-    global sunpower
-    global nizbelpower
-    global yakraxiiipower
-    global rustpower
-    global gigapower
-    global desertpower
-    for locs in locations:
-        if locations [locs] in important_keys:
-           importantlocs.append(locs)
-    important_keys.clear()
-    for locs in importantlocs:
-        if locs == "reptite":
-           important_keys.append("gate")
-           nizbelpower = rank
-        if locs in futurelocs:
-           important_keys.append("pendant")
-           if dtankpower < rank:
-              dtankpower = rank - 1
-              guardianpower = dtankpower + 1
-              sunpower = dtankpower + 1
-              motherpower = dtankpower + 1
-        if locs == "melchior":
-           yakraxiiipower = rank
-           important_keys.append("moon")
-           if "gate" not in important_keys:
-              important_keys.append("gate")
-           if "pendant" not in important_keys:
-              important_keys.append("pendant")
-           dtankpower = yakraxiiipower - 1
-        if locs == "trial":
-             important_keys.append("prism")
-             yakraxiiipower = rank
-        if locs == "claw":
-           important_keys.append("pop")
-           rustpower = rank
-        if locs == "desert":
-           desertpower = rank
-        if locs == "woe":
-           gigapower = rank
-        if locs == "burrow":
-           important_keys.append("medal")
-    if rank > 2:
-       important_keys.append("blade")
-       important_keys.append("hilt")
-       important_keys.append("stone")
-    rank = rank - 1
-    if rank > 0:
-        set_power(locations,important_keys,rank)
-def scale_stats(bosspower,boss,pointer):
-    if bosspower == 0: return
-    boss_stats = []
-    i = 0
-    halfword_stats = [0,6,7]
-    if boss == rusttyrano:
-       if bosspower < 2:
-          boss_stats = [6000,16,16,50,160,127,3000,4000,50]
-       elif bosspower < 3:
-          boss_stats = [7000,20,20,50,170,127,3500,6000,60]
-       else: boss_stats = [8000,30,30,50,180,127,4000,8000,70]
-    if boss == dragon_tank:
-       if bosspower < 2:
-          boss_stats = [1100,15,15,60,50,160,1600,2500,26]
-       else: boss_stats = [1300,30,30,60,100,160,2200,4000,36]
-    if boss == dragon_wheel:
-       if bosspower < 2:
-          boss_stats = [1000,25,25,60,42,160]
-       else: boss_stats = [1100,25,25,60,85,160]
-    if boss == dragon_head:
-       if bosspower < 2:
-            boss_stats = [1400,20,20,60,50,160]
-       else: boss_stats = [1600,30,30,60,50,160]
-    if boss == sonofsun:
-       if bosspower < 2:
-            boss_stats = ["",20,20,"","","",1600,3000,30]
-       elif bosspower < 3:
-            boss_stats = ["",30,20,"","","",2200,5000,40]
-       else: boss_stats = ["",30,30,"","","",2800,7000,50]
-    if boss == sos_flame:
-       if bosspower < 2:
-            boss_stats = ["",20,20,"","",""]
-       elif bosspower < 3:
-            boss_stats = ["",30,20,"","",""]
-       else: boss_stats = ["",30,30,"","",""]
-    if boss == nizbel:
-       if bosspower < 2:
-          boss_stats = [6000,20,20,60,155,253,4000,4400,45]
-       elif bosspower < 3:
-          boss_stats = [7000,30,30,60,175,253,5000,5500,55]
-       else: boss_stats = [8000,40,40,65,190,253,6000,6800,65]
-    if boss == retinite_head or boss == retinite_legs:
-       if bosspower < 2:
-          boss_stats = [2000,15,15,60,130,153,1200,0,12]
-       elif bosspower < 3:
-          boss_stats = [2200,20,20,65,160,165,1400,0,14]
-       else: boss_stats = [2400,25,25,70,190,178,1600,0,16]
-    if boss == retinite_core:
-       if bosspower < 2:
-          boss_stats = [700,15,19,60,50,153,2400,2100,30]
-       elif bosspower < 3:
-          boss_stats = [800,15,19,65,50,165,2800,2700,40]
-       else: boss_stats = [900,15,19,70,50,178,3200,3300,50]
-    if boss == yakraxiii:
-       if bosspower < 2:
-          boss_stats = [5200,17,18,50,95,127,2800,3000,50]
-       elif bosspower < 3:
-            boss_stats = [5800,17,18,50,120,127,3400,4000,60]
-       else: boss_stats = [6300,17,18,50,150,127,4000,5000,70]
-    if boss == guardian:
-       if bosspower < 2:
-          boss_stats = [3500,15,15,50,16,127,2500,3000,30]
-       elif bosspower < 3:
-            boss_stats = [4000,20,20,50,16,127,3000,4000,40]
-       else: boss_stats = [4300,30,30,50,16,127,3500,5000,50]
-    if boss == bit:
-       if bosspower < 2:
-          boss_stats = [500,12,12,50,32,127]
-       elif bosspower < 3:
-            boss_stats = [500,15,15,50,50,127]
-       else: boss_stats = [500,17,17,50,74,127]
-    if boss == motherbrain:
-       if bosspower < 2:
-          boss_stats = [3500,20,20,50,100,127,3100,4000,50]
-       elif bosspower < 3:
-             boss_stats = [4000,30,30,50,100,127,3700,5000,60]
-       else: boss_stats = [4500,40,40,50,100,127,4300,6000,70]
-    if boss == display:
-       if bosspower < 2:
-          boss_stats = [1,15,15,50,144,127]
-       elif bosspower < 3:
-          boss_stats = [1,15,20,50,144,127]
-       else: boss_stats = [1,15,25,50,144,127]
-    if boss == rseries:
-       if bosspower < 2:
-          boss_stats = [1200,15,15,50,52,127,500,400,10]
-       else: boss_stats = [1400,20,20,50,75,127,600,600,15]
-    if boss == giga_gaia:
-       if bosspower < 2:
-          boss_stats = [8000,32,15,50,50,127,5000,7000,90]
-       elif bosspower < 3:
-             boss_stats = [9000,32,15,50,50,127,6000,8100,100]
-       else: boss_stats = [10000,32,15,50,50,127,7000,9200,110]
-    if boss == gaia_left:
-       if bosspower < 2:
-          boss_stats = [2500,20,30,61,40,127]
-       elif bosspower < 3:
-            boss_stats = [3000,30,30,61,40,127]
-       else: boss_stats = [3500,40,30,61,40,127]
-    if boss == gaia_right:
-       if bosspower < 2:
-          boss_stats = [2500,20,30,50,60,158]
-       elif bosspower < 3:
-            boss_stats = [3000,30,30,50,60,158]
-       else: boss_stats = [3500,40,30,50,60,158]
-    while i < len(boss_stats):
-          if boss [i] == "":
-             i += 1
-             continue
-          pointer.seek(boss [i])
-          if i in halfword_stats:
-             pointer.write(st.pack("H",boss_stats[i]))
-          else: 
-             pointer.write(st.pack("B",boss_stats[i]))
-          i += 1
+from enemystats import EnemyStats
+import logicfactory
+import logicwriter_chronosanity as logicwriter
+
+import randoconfig as cfg
+import randosettings as rset
+
+# Order of stats:
+# HP, Level, Magic, Magic Def, Off, Def, XP, GP, TP
+# Sometimes xp, gp, tp are omitted at the end.
+scaling_data = {
+    EnemyID.RUST_TYRANO: [[6000, 16, 16, 50, 160, 127, 3000, 4000, 50],
+                          [7000, 20, 20, 50, 170, 127, 3500, 6000, 60],
+                          [8000, 30, 30, 50, 180, 127, 4000, 8000, 70]],
+    EnemyID.DRAGON_TANK: [[1100, 15, 15, 60, 50, 160, 1600, 2500, 26],
+                          [1300, 30, 30, 60, 100, 160, 2200, 4000, 36],
+                          [1300, 30, 30, 60, 100, 160, 2200, 4000, 36]],
+    EnemyID.TANK_HEAD: [[1400, 20, 20, 60, 50, 160],
+                        [1600, 30, 30, 60, 50, 160],
+                        [1600, 30, 30, 60, 50, 160]],
+    EnemyID.GRINDER: [[1400, 20, 20, 60, 50, 160],
+                      [1600, 30, 30, 60, 50, 160],
+                      [1600, 30, 30, 60, 50, 160]],
+    EnemyID.SON_OF_SUN_EYE: [["", 20, 20, "", "", "", 1600, 3000, 30],
+                             ["", 30, 20, "", "", "", 2200, 5000, 40],
+                             ["", 30, 30, "", "", "", 2800, 7000, 50]],
+    EnemyID.SON_OF_SUN_FLAME: [["", 20, 20, "", "", ""],
+                               ["", 30, 20, "", "", ""],
+                               ["", 30, 30, "", "", ""]],
+    EnemyID.NIZBEL: [[6000, 20, 20, 60, 155, 253, 4000, 4400, 45],
+                     [7000, 30, 30, 60, 175, 253, 5000, 5500, 55],
+                     [8000, 40, 40, 65, 190, 253, 6000, 6800, 65]],
+    EnemyID.RETINITE_TOP: [[2000, 15, 15, 60, 130, 153, 1200, 0, 12],
+                           [2200, 20, 20, 65, 160, 165, 1400, 0, 14],
+                           [2400, 25, 25, 70, 190, 178, 1600, 0, 16]],
+    EnemyID.RETINITE_BOTTOM: [[2000, 15, 15, 60, 130, 153, 1200, 0, 12],
+                              [2200, 20, 20, 65, 160, 165, 1400, 0, 14],
+                              [2400, 25, 25, 70, 190, 178, 1600, 0, 16]],
+    # Should the eye get less hp with higher scaling?
+    EnemyID.RETINITE_EYE: [[700, 15, 19, 60, 50, 153, 2400, 2100, 30],
+                           [800, 15, 19, 65, 50, 165, 2800, 2700, 40],
+                           [900, 15, 19, 70, 50, 178, 3200, 3300, 50]],
+    EnemyID.YAKRA_XIII: [[5200, 17, 18, 50, 95, 127, 2800, 3000, 50],
+                         [5800, 17, 18, 50, 120, 127, 3400, 4000, 60],
+                         [6300, 17, 18, 50, 150, 127, 4000, 5000, 70]],
+    EnemyID.GUARDIAN: [[3500, 15, 15, 50, 16, 127, 2500, 3000, 30],
+                       [4000, 20, 20, 50, 16, 127, 3000, 4000, 40],
+                       [4300, 30, 30, 50, 16, 127, 3500, 5000, 50]],
+    EnemyID.GUARDIAN_BIT: [[500, 12, 12, 50, 32, 127],
+                           [500, 15, 15, 50, 50, 127],
+                           [500, 17, 17, 50, 74, 127]],
+    EnemyID.MOTHERBRAIN: [[3500, 20, 20, 50, 100, 127, 3100, 4000, 50],
+                          [4000, 30, 30, 50, 100, 127, 3700, 5000, 60],
+                          [4500, 40, 40, 50, 100, 127, 4300, 6000, 70]],
+    EnemyID.DISPLAY: [[1, 15, 15, 50, 144, 127],
+                      [1, 15, 20, 50, 144, 127],
+                      [1, 15, 25, 50, 144, 127]],
+    EnemyID.R_SERIES: [[1200, 15, 15, 50, 52, 127, 500, 400, 10],
+                       [1400, 20, 20, 50, 75, 127, 600, 600, 15],
+                       [1200, 15, 15, 50, 52, 127, 500, 400, 10]],
+    EnemyID.GIGA_GAIA_HEAD: [[8000, 32, 15, 50, 50, 127, 5000, 7000, 90],
+                             [9000, 32, 15, 50, 50, 127, 6000, 8100, 100],
+                             [10000, 32, 15, 50, 50, 127, 7000, 9200, 110]],
+    EnemyID.GIGA_GAIA_LEFT: [[2500, 20, 30, 61, 40, 127],
+                             [3000, 30, 30, 61, 40, 127],
+                             [3500, 40, 30, 61, 40, 127]],
+    EnemyID.GIGA_GAIA_RIGHT: [[2500, 20, 30, 50, 60, 158],
+                              [3000, 30, 30, 50, 60, 158],
+                              [3500, 40, 30, 50, 60, 158]]
+}
+
+
+# TODO: Separate determining rank from setting power.  Maybe the rank can be
+#       stored in the config and then written out later.
+def set_boss_power(settings: rset.Settings, config: cfg.RandoConfig):
+    # First, boss scaling only works for normal logic
+    chronosanity = rset.GameFlags.CHRONOSANITY in settings.gameflags
+    lost_worlds = rset.GameFlags.LOST_WORLDS in settings.gameflags
+
+    if chronosanity or lost_worlds:
+        print('Boss scaling not compatible with either Lost Worlds or '
+              'Chronosanity.  Returning.')
+        return
+
+    game_config = logicfactory.getGameConfig(settings, config)
+    key_item_list = game_config.keyItemList
+
+    # To match the original implementation, make a dict with
+    # ItemID --> TreasureID  for key items
+    key_item_dict = {config.treasure_assign_dict[loc].held_item: loc
+                     for loc in config.treasure_assign_dict.keys()
+                     if config.treasure_assign_dict[loc].held_item
+                     in key_item_list}
+
+    boss_rank = dict()
+    boss_assign = config.boss_assign_dict
+
+    # Treasure --> Location of Boss
+    # This gives the location of the boss to scale when the treasure location
+    # holds a key item.
+    # Note:  Locations open at the start of the game (Denadoro, Bridge,
+    #        Heckran) are never scaled, even if they have top rank items.
+    loc_dict: dict[TID, LocID] = {
+        TID.REPTITE_LAIR_KEY: LocID.REPTITE_LAIR_AZALA_ROOM,
+        TID.KINGS_TRIAL_KEY: LocID.KINGS_TRIAL_NEW,
+        TID.GIANTS_CLAW_KEY: LocID.GIANTS_CLAW_TYRANO,
+        TID.FIONA_KEY: LocID.SUNKEN_DESERT_DEVOURER,
+        TID.MT_WOE_KEY: LocID.MT_WOE_SUMMIT,
+    }
+
+    # Treasure --> Item prerequisite
+    # This gives the item to add to the important_keys pool when the treasure
+    # location holds a key item.
+    # TODO:  Automate this somehow in the logic object.
+    item_req_dict: dict[TID, ItemID] = {
+        TID.REPTITE_LAIR_KEY: ItemID.GATE_KEY,
+        TID.KINGS_TRIAL_KEY: ItemID.PRISMSHARD,
+        TID.GIANTS_CLAW_KEY: ItemID.TOMAS_POP,
+        TID.FROGS_BURROW_LEFT: ItemID.HERO_MEDAL
+    }
+
+    no_req_tids = [TID.DENADORO_MTS_KEY, TID.ZENAN_BRIDGE_KEY,
+                   TID.SNAIL_STOP_KEY, TID.LAZY_CARPENTER,
+                   TID.TABAN_KEY]
+
+    rank = 3
+    important_keys = [ItemID.C_TRIGGER, ItemID.CLONE, ItemID.RUBY_KNIFE]
+
+    while rank > 0:
+        print(f"rank = {rank}")
+        print(important_keys)
+        important_tids = [key_item_dict[item] for item in important_keys]
+
+        for item in important_keys:
+            print(f"{item} is in {key_item_dict[item]}")
+
+        important_keys = list()
+
+        for tid in important_tids:
+            if tid in [TID.SUN_PALACE_KEY, TID.ARRIS_DOME_KEY,
+                       TID.GENO_DOME_KEY]:
+                # If you found an important item in the future:
+                #   1) Set prison boss (dtank) to rank-1
+                #   2) Set all future bosses to rank
+                # This only happens once, for the highest ranked item in the
+                # future.  Lower rank items found in the future will not
+                # decrease the rank of the future bosses.
+                important_keys.append(ItemID.PENDANT)
+                print(f"Adding {ItemID.PENDANT} to important keys")
+                prisonboss = boss_assign[LocID.PRISON_CATWALKS]
+
+                # Skip rank assignment if dtank already has a higher rank.
+                # This will happen if keys of multiple levels are in future.
+
+                if prisonboss not in boss_rank.keys() or (
+                        prisonboss in boss_rank.keys() and
+                        boss_rank[prisonboss] < rank
+                ):
+                    print(f"Setting {prisonboss} to rank {rank - 1}")
+                    boss_rank[prisonboss] = rank - 1
+                    gated_locs = [LocID.SUN_PALACE,
+                                  LocID.GENO_DOME_MAINFRAME,
+                                  LocID.ARRIS_DOME_GUARDIAN_CHAMBER]
+                    for loc in gated_locs:
+                        futureboss = boss_assign[loc]
+                        print(f"Setting {futureboss} to rank {rank}")
+                        boss_rank[futureboss] = rank
+            elif tid == TID.MELCHIOR_KEY:
+                # When Melchior gets a key item:
+                #  1) gate key and pendant get added for next rank
+                #  2) king's trial boss gets set to rank
+                #  3) prison boss (dtank) gets set to rank-1
+                # This is subtle:  Dtank's rank can not be decreased by future
+                # items of lower rank, but it will be reduced by Melchior
+                # having a lower rank item.
+
+                boss = boss_assign[LocID.KINGS_TRIAL_NEW]
+            else:
+                # Other TIDs are straightforward.  Add their prerequisite item
+                # to the important_keys pool if they have one.  Rank their
+                # boss if they have one.
+                if tid in loc_dict.keys():
+                    location = loc_dict[tid]
+                    boss = boss_assign[location]
+                    boss_rank[boss] = rank
+                    print(f"Setting {boss} to rank {rank}")
+
+                if tid in item_req_dict.keys():
+                    item = item_req_dict[tid]
+                    important_keys.append(item)
+                    print(f"Adding {item} to important keys")
+
+                if (
+                        tid not in loc_dict.keys() and
+                        tid not in item_req_dict.keys() and
+                        tid not in no_req_tids
+                ):
+                    print(f"Warning: {tid} not in either dictionary")
+                    input()
+
+        # Really, this just happens on the first iteration of the loop.
+        if rank > 2:
+            important_keys.extend([ItemID.BENT_HILT,
+                                   ItemID.BENT_SWORD,
+                                   ItemID.DREAMSTONE])
+
+        important_keys = list(set(important_keys))
+        rank -= 1
+
+    char_dict = config.char_assign_dict
+    proto_char = char_dict[RecruitID.PROTO_DOME].held_char
+    factoryboss = boss_assign[LocID.FACTORY_RUINS_SECURITY_CENTER]
+
+    if rset.GameFlags.LOCKED_CHARS in settings.gameflags:
+        if proto_char in [CharID.ROBO, CharID.AYLA]:
+            boss_rank[factoryboss] = 1
+        elif proto_char in [CharID.CRONO, CharID.MAGUS]:
+            boss_rank[factoryboss] = 2
+
+    for boss in boss_rank.keys():
+        print(f"{boss} has rank {boss_rank[boss]}")
+        boss_data = config.boss_data_dict[boss]
+        part_ids = list(set(boss_data.ids))
+        rank = boss_rank[boss]
+
+        for part in part_ids:
+            if part in scaling_data.keys():
+                stat_list = scaling_data[part][rank-1]
+                print(f"{part} has defined stats {stat_list}")
+            else:
+                # When there is no bespoke stat scaling, fall back to each
+                # rank adding X% over the previous rank.
+                stats = config.enemy_dict[part]
+                stat_list = rank_up_stats(stats, rank)
+                print(f"{part} gets computed stats {stat_list}")
+
+            config.enemy_dict[part].replace_from_stat_list(stat_list)
+
+
+# Just add 15% with each rank up.
+# TODO: This doesn't give you what you want.  The scaled stats are supposed
+#       to start at hard mode stats I think?  Maybe this needs to start by
+#       loading up the hard-mode stats (from a pickle?) and then scaling.
+def rank_up_stats(stats: EnemyStats, rank: int) -> list[int]:
+    scale_factor = 1.15 ** rank
+    orig_mdef = stats.mdef
+    orig_def = stats.defense
+
+    stat_list = [stats.hp, stats.level, stats.magic,
+                 stats.mdef, stats.offense, stats.defense,
+                 stats.xp, stats.gp, stats.tp]
+    print(stat_list)
+    input()
+
+    stat_max = [0x7FFF, 0xFF, 0xFF,
+                0xFF, 0xFF, 0xFF,
+                0xFFFF, 0xFFFF, 0xFF]
+
+    stat_list = [int(min(stat_list[i]*scale_factor, stat_max[i]))
+                 for i in range(len(stat_list))]
+
+    # set mdef/def back to normal range
+    stat_list[3] = orig_mdef
+    stat_list[5] = orig_def
+
+    return stat_list
+
+
+def main():
+    # set up a barebones randomizer environment and test the boss scaling
+    with open('./roms/jets_test.sfc', 'rb') as infile:
+        rom = bytearray(infile.read())
+
+    settings = rset.Settings.get_race_presets()
+    settings.gameflags |= rset.GameFlags.LOCKED_CHARS
+    settings.ro_settings.preserve_parts = True
+    config = cfg.RandoConfig(rom)
+
+    # Write the key items
+    config.logic_config = logicfactory.getGameConfig(settings, config)
+    logicwriter.commitKeyItems(settings, config)
+
+    set_boss_power(settings, config)
+
+
+if __name__ == '__main__':
+    main()

@@ -28,6 +28,26 @@ class EnemyStats:
 
     name: ctstrings.CTString = ctstrings.CTString.from_ascii('Nu')
 
+    # bossscaler.py uses lists of stats to do the scaling.  This method takes
+    # one of those lists and replaces the relevant stats in the class.
+    def replace_from_stat_list(self, stat_list: list[int]):
+        # stat list order is hp, lvl, mag, mdf, off, def, xp, gp, tp
+
+        # Some records have missing stats at the end.  Pad with ""
+        missing_stat_count = 9-len(stat_list)
+        stat_list.extend([""]*missing_stat_count)
+
+        cur_stats = [self.hp, self.level, self.magic, self.mdef, self.offense,
+                     self.defense, self.xp, self.gp, self.tp]
+
+        new_stats = [stat_list[i] if stat_list[i] != "" else cur_stats[i]
+                     for i in range(len(cur_stats))]
+
+        [
+            self.hp, self.level, self.magic, self.mdef, self.offense,
+            self.defense, self.xp, self.gp, self.tp
+        ] = new_stats[:]
+
     def from_rom(rom: bytearray, enemy_id: int):
         # enemy stat data is a 23 byte structure beginning at 0x0C4700
         stat_addr = 0x0C4700 + 23*enemy_id
