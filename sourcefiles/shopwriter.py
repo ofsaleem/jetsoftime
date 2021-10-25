@@ -16,6 +16,9 @@ import randosettings as rset
 # low_lvl_consumables: tw has powermeal but not shopwriter
 # good_lvl_items: tw has greendream but not shopwriter
 # hlvlconsumables: tw has tabs but not shopwriter
+
+# There's no reason for these to be in treasurewriter.  Maybe a method
+# in the enum?
 low_lvl_items = tw.low_lvl_items
 low_lvl_consumables = tw.low_lvl_consumables
 low_lvl_consumables.remove(ItemID.POWER_MEAL)
@@ -50,7 +53,6 @@ regular_shop_ids = [
 ]
 
 good_shop_ids = [
-    ShopID.TRUCE_MARKET_1000,
     ShopID.MELCHIORS_HUT,
     ShopID.IOKA_VILLAGE,
     ShopID.NU_NORMAL_KAJAR,
@@ -58,7 +60,11 @@ good_shop_ids = [
     ShopID.EARTHBOUND_VILLAGE,
     ShopID.TRANN_DOME,
     ShopID.MEDINA_MARKET,
+]
+
+good_lapis_shop_ids = [
     ShopID.FIONAS_SHRINE,
+    ShopID.TRUCE_MARKET_1000,
 ]
 
 best_shop_ids = [
@@ -109,6 +115,7 @@ def process_rom(ctrom: CTRom, settings: rset.Settings,
         (5, mid_lvl_items + good_lvl_items)
     )
     good_guaranteed = []
+    good_lapis_guaranteed = [ItemID.LAPIS]
 
     best_dist = tw.TreasureDist(
         (5, (good_lvl_consumables + high_lvl_consumables +
@@ -121,9 +128,11 @@ def process_rom(ctrom: CTRom, settings: rset.Settings,
     shop_manager.set_shop_items(ShopID.MELCHIOR_FAIR,
                                 get_melchior_shop_items())
 
-    shop_types = [regular_shop_ids, good_shop_ids, best_shop_ids]
-    shop_dists = [regular_dist, good_dist, best_dist]
-    shop_guaranteed = [regular_guaranteed, good_guaranteed, best_guaranteed]
+    shop_types = [regular_shop_ids, good_shop_ids,
+                  good_lapis_shop_ids, best_shop_ids]
+    shop_dists = [regular_dist, good_dist, good_dist, best_dist]
+    shop_guaranteed = [regular_guaranteed, good_guaranteed,
+                       good_lapis_guaranteed, best_guaranteed]
 
     for i in range(len(shop_types)):
         for shop in shop_types[i]:
