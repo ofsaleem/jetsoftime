@@ -33,6 +33,7 @@ class BossID(StrIntEnum):
     NIZBEL = auto()
     NIZBEL_2 = auto()
     RETINITE = auto()
+    R_SERIES = auto()
     RUST_TYRANO = auto()
     SLASH_SWORD = auto()
     SUPER_SLASH = auto()
@@ -128,6 +129,7 @@ class LocID(StrIntEnum):
     # GENO_DOME MAINFRAME = 0x10C  # Defined for treasures elsewhere
     PRISON_CATWALKS = 0x1C
     MT_WOE_SUMMIT = 0x18D
+    FACTORY_RUINS_SECURITY_CENTER = 0xE6
 
     # Character Recruitment Locations
     LOAD_SCREEN = 0x00
@@ -1165,6 +1167,7 @@ class ShopID(StrIntEnum):
     FIONAS_SHRINE = 0x16
     NU_BLACK_OMEN = 0x17
     # There is room for shops through 0x3F if desired
+
 
 class RecruitID(StrIntEnum):
     STARTER_1 = auto()

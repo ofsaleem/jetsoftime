@@ -166,7 +166,7 @@ class EventCommand:
 
     #  Here x and y are assumed to be pixel coordinates
     def set_object_coordinates(x: int, y: int) -> EventCommand:
-        print(f"set: ({x:04X}, {y:04X})")
+        # print(f"set: ({x:04X}, {y:04X})")
 
         # Command 0x8B works based on tiles while 0x8D works on pixels.
         # It should be that the two differ by a factor of 16, but it doesn't

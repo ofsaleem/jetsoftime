@@ -1081,13 +1081,14 @@ class RandoConfig:
 
         self.boss_assign_dict = {
             LocID.PRISON_CATWALKS: BossID.DRAGON_TANK,
+            LocID.FACTORY_RUINS_SECURITY_CENTER: BossID.R_SERIES,
             LocID.BLACK_OMEN_ELDER_SPAWN: BossID.ELDER_SPAWN,
             LocID.MAGUS_CASTLE_FLEA: BossID.FLEA,
             LocID.OZZIES_FORT_FLEA_PLUS: BossID.FLEA_PLUS,
             LocID.MT_WOE_SUMMIT: BossID.GIGA_GAIA,
             LocID.BLACK_OMEN_GIGA_MUTANT: BossID.GIGA_MUTANT,
             LocID.ZEAL_PALACE_THRONE_NIGHT: BossID.GOLEM,
-            LocID.ARRIS_DOME: BossID.GUARDIAN,
+            LocID.ARRIS_DOME_GUARDIAN_CHAMBER: BossID.GUARDIAN,
             LocID.HECKRAN_CAVE_NEW: BossID.HECKRAN,
             LocID.DEATH_PEAK_GUARDIAN_SPAWN: BossID.LAVOS_SPAWN,
             LocID.CAVE_OF_MASAMUNE: BossID.MASA_MUNE,
@@ -1107,7 +1108,6 @@ class RandoConfig:
         }
 
         self.boss_data_dict = get_boss_data_dict(rom)
-
         self.enemy_dict = enemystats.get_stat_dict(rom)
         self.shop_manager = ShopManager(rom)
         self.price_manager = PriceManager(rom)

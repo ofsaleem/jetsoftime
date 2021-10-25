@@ -6,9 +6,6 @@ from typing import Tuple, Type, TypeVar
 from enemystats import EnemyStats
 
 from ctenums import EnemyID, BossID, LocID
-from ctrom import CTRom
-# import randosettings as rset
-# import randoconfig as cfg
 
 
 # Silly thing for typing classmethod return type from stackexchange
@@ -205,6 +202,16 @@ class Boss:
         return cls.generic_multi_spot(rom, ids, disps, slots, power)
 
     @classmethod
+    def R_SERIES(cls: Type[T], rom: bytearray) -> T:
+        ids = [EnemyID.R_SERIES, EnemyID.R_SERIES, EnemyID.R_SERIES,
+               EnemyID.R_SERIES]
+        slots = [3, 4, 7, 8]
+        disps = [(0, 0), (0, 0x20), (0x20, 0), (0x20, 0x20)]  # maybe wrong
+        power = 15
+
+        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+
+    @classmethod
     def RUST_TYRANO(cls: Type[T], rom: bytearray) -> T:
         return cls.generic_one_spot(rom, EnemyID.RUST_TYRANO, 3, 15)
 
@@ -315,6 +322,7 @@ def get_boss_data_dict(rom: bytearray):
         BossID.NIZBEL: LinearScaleBoss.NIZBEL(rom),
         BossID.NIZBEL_2: LinearScaleBoss.NIZBEL_II(rom),
         BossID.RETINITE: LinearScaleBoss.RETINITE(rom),
+        BossID.R_SERIES: LinearScaleBoss.R_SERIES(rom),
         BossID.RUST_TYRANO: LinearScaleBoss.RUST_TYRANO(rom),
         BossID.SLASH_SWORD: LinearScaleBoss.SLASH_SWORD(rom),
         BossID.SON_OF_SUN: LinearNoHPScaleBoss.SON_OF_SUN(rom),
