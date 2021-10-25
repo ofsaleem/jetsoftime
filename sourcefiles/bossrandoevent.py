@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import copy
 
-from byteops import get_value_from_bytes, to_little_endian
+from byteops import to_little_endian
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
-from enum import IntEnum
+from dataclasses import dataclass, replace
 from freespace import FSWriteType
-from typing import TypeVar, Type, Tuple
 import random
 
 # from ctdecompress import compress, decompress, get_compressed_length
