@@ -615,8 +615,18 @@ class TechDB:
         ret_tech['desc'] = self.descs[start:end]
 
         first_dual_tech = self.group_sizes[self.first_dual_grp]
-        first_trip_tech = self.group_sizes[self.first_trip_grp]
-        first_rock_tech = self.group_sizes[self.first_rock_grp]
+
+        # Getting the thresholds for triple/rock techs is a little dicey when
+        # there are none.  This all needs to be reconsidered.
+        if self.first_trip_grp < len(self.group_sizes):
+            first_trip_tech = self.group_sizes[self.first_trip_grp]
+        else:
+            first_trip_tech = self.group_sizes[-1]+3
+
+        if self.first_rock_grp < len(self.group_sizes):
+            first_rock_tech = self.group_sizes[self.first_rock_grp]
+        else:
+            first_rock_tech = self.group_sizes[-1]+3
 
         if tech_id < first_dual_tech:
             ret_tech['lrn_req'] = None
@@ -637,7 +647,6 @@ class TechDB:
             ret_tech['mmp'] = self.menu_mp_reqs[mmp_start:mmp_start+3]
 
         ret_tech['atb_pen'] = [self.atb_pens[tech_id]]
-        first_trip_tech = self.group_sizes[self.first_trip_grp]
         num_trips = len(self.menu_grps)-self.first_trip_grp
 
         if tech_id >= first_trip_tech:
