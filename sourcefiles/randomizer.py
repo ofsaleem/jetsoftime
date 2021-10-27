@@ -5,27 +5,28 @@ from os import stat
 from time import time
 import sys
 import pathlib
-import treasurewriter as treasures
-import specialwriter as hardcoded_items
-import shopwriter as shops
+import treasurewriter
+import shopwriter
 import characterwriter as char_slots
 import logicwriter as keyitems
-import logicwriter_chronosanity as chronosanity_logic
+import logicwriter_chronosanity as logicwriter
 import random as rand
 import ipswriter as bigpatches
 import patcher as patches
 import enemywriter as enemystuff
-import bossrando as boss_shuffler
-import bossscaler as boss_scale
+import bossrandoevent as bossrando
+import bossscaler
 import techwriter as tech_order
 import randomizergui as gui
 import tabchange as tabwriter
 import fastmagic
 import charrando
 import roboribbon
+import techrandomizer
 
 import ctenums
 from ctrom import CTRom
+import ctstrings
 import enemyrewards
 
 from freespace import FSWriteType
@@ -37,9 +38,9 @@ class Randomizer:
 
     def __init__(self, rom: bytearray, settings: rset.Settings):
 
-        self.config = cfg.RandoConfig()
         self.ctrom = CTRom(rom)
         self.settings = settings
+        flags = self.settings.gameflags
 
         # Apply the patches that always are applied
         self.ctrom.rom_data.patch_ips_file('./patch.ips')
@@ -52,21 +53,213 @@ class Randomizer:
         rom_data.patch_txt_file('./patches/fast_overworld_walk_patch.txt')
         rom_data.patch_txt_file('./patches/faster_epoch_patch.txt')
         rom_data.patch_txt_file('./patches/faster_menu_dpad.txt')
+        
+        if rset.GameFlags.ZEAL_END in flags:
+            rom_data.patch_txt_file('./patches/zeal_end_boss.txt')
+
+        if rset.GameFlags.LOST_WORLDS in flags:
+            rom_data.patch_ips_file('./patches/lost.ips')
+
+        if rset.GameFlags.FAST_PENDANT in flags:
+            rom_data.patch_txt_file('./patches/fast_charge_pendant.txt')
+
+        # Omitting fast magic for now.  Trying to keep rom editing to
+        # after the config's been written.
+
+        # We want to write the hard mode enemies out so that config's
+        # enemy_dict is correct
+        if settings.enemy_difficulty == rset.Difficulty.HARD:
+            rom_data.patch_ips_file('./patches/hard.ips')
 
         # It should be safe to move the robo's ribbon code here since it
         # also doesn't depend on flags and should be applied prior to anything
         # else that messes with the items because it shuffles effects
         roboribbon.robo_ribbon_speed(rom_data.getbuffer())
 
+        # You need to build the initial config AFTER the big patches are
+        # applied.
+        self.config = cfg.RandoConfig(bytearray(rom_data.getvalue()))
+
+    # Given the settings passed to the randomizer, write the RandoConfig
+    # object.
+    # Use a verb other than write?
+    def write_config(self):
+        # Character config.  Includes tech randomization.
+        charrando.write_pcs_to_config(self.settings, self.config)
+        techrandomizer.write_tech_order_to_config(self.settings,
+                                                  self.config)
+
+        # Treasure config.
+        treasurewriter.write_treasures_to_config(self.settings, self.config)
+
+        # Enemy rewards
+        enemyrewards.write_enemy_rewards_to_config(self.settings, self.config)
+
+        # Key item config.  Important that this goes after treasures because
+        # otherwise the treasurewriter can overwrite key items placed by
+        # Chronosanity
+        logicwriter.commitKeyItems(self.settings, self.config)
+
+        # Shops
+        shopwriter.write_shops_to_config(self.settings, self.config)
+
+        # Item Prices
+        shopwriter.write_item_prices_to_config(self.settings, self.config)
+
+        # Boss Rando
+        bossrando.write_assignment_to_config(self.settings, self.config)
+        bossrando.scale_bosses_given_assignment(self.settings, self.config)
+
+        # Boss scaling (done after boss rando)
+        bossscaler.set_boss_power(self.settings, self.config)
+
     def write_spoiler_log(self, filename):
-        pass
+        with open(filename, 'w') as outfile:
+            self.write_key_item_spoilers(outfile)
+            self.write_character_spoilers(outfile)
+            self.write_boss_rando_spoilers(outfile)
+            self.write_boss_stat_spoilers(outfile)
+            self.write_treasure_spoilers(outfile)
+            self.write_shop_spoilers(outfile)
+            self.write_price_spoilers(outfile)
+
+    def write_key_item_spoilers(self, file_object):
+        file_object.write("Key Item Locations\n")
+        file_object.write("------------------\n")
+
+        # We have to use the logicwriter's Location class only because
+        # of Chronosanity's linked locations needing to be handled properly.
+
+        width = max(len(x.getName()) for x in self.config.key_item_locations)
+
+        for location in self.config.key_item_locations:
+            file_object.write(str.ljust(f"{location.getName()}", width+8) +
+                              str(location.getKeyItem()) + '\n')
+        file_object.write('\n')
+
+    def write_character_spoilers(self, file_object):
+        char_man = self.config.char_manager
+        char_assign = self.config.char_assign_dict
+
+        file_object.write("Character Locations\n")
+        file_object.write("-------------------\n")
+        for recruit_spot in char_assign.keys():
+            file_object.write(str.ljust(f"{recruit_spot}", 20) +
+                              f"{char_assign[recruit_spot].held_char}\n")
+        file_object.write('\n')
+
+        file_object.write("Character Stats\n")
+        file_object.write("---------------\n")
+
+        CharID = ctenums.CharID
+        dup_chars = rset.GameFlags.DUPLICATE_CHARS in self.settings.gameflags
+        techdb = self.config.techdb
+
+        for char_id in range(7):
+            file_object.write(f"{CharID(char_id)}:")
+            if dup_chars:
+                file_object.write(
+                    f" assigned to {char_man.pcs[char_id].assigned_char}"
+                )
+            file_object.write('\n')
+            file_object.write(char_man.pcs[char_id].stats.get_stat_string())
+
+            file_object.write('Tech Order:\n')
+            for tech_num in range(8):
+                # TODO:  Is it OK to randomize the DB early?  We're trying it.
+                # tech_num = char_man.pcs[char_id].tech_permutation[tech_num]
+                tech_id = 1 + 8*char_id + tech_num
+                tech = techdb.get_tech(tech_id)
+                name = ctstrings.CTString.ct_bytes_to_techname(tech['name'])
+                file_object.write(f"\t{name}\n")
+            file_object.write('\n')
+
+    def write_treasure_spoilers(self, file_object):
+        # Where should the location groupings go?
+        width = max(len(str(x))
+                    for x in self.config.treasure_assign_dict.keys())
+
+        file_object.write("Treasure Assignment\n")
+        file_object.write("-------------------\n")
+        treasure_dict = self.config.treasure_assign_dict
+        for treasure in treasure_dict.keys():
+            file_object.write(str.ljust(str(treasure), width+8) +
+                              str(treasure_dict[treasure].held_item) +
+                              '\n')
+        file_object.write('\n')
+
+    def write_shop_spoilers(self, file_object):
+        file_object.write("Shop Assigmment\n")
+        file_object.write("---------------\n")
+        file_object.write(
+            self.config.shop_manager.__str__(self.config.price_manager)
+        )
+        file_object.write('\n')
+
+    def write_price_spoilers(self, file_object):
+        file_object.write("Item Prices\n")
+        file_object.write("-----------\n")
+
+        width = max(len(str(x)) for x in list(ctenums.ItemID)) + 8
+
+        item_ids = [x for x in list(ctenums.ItemID)
+                    if x in range(1, ctenums.ItemID(0xD0))]
+        
+        for item_id in item_ids:
+            file_object.write(
+                str.ljust(str(ctenums.ItemID(item_id)), width) +
+                str(self.config.price_manager.get_price(item_id)) +
+                '\n'
+            )
+        file_object.write('\n')
+
+    def write_boss_rando_spoilers(self, file_object):
+        file_object.write("Boss Locations\n")
+        file_object.write("--------------\n")
+
+        boss_dict = self.config.boss_assign_dict
+        width = max(len(str(x)) for x in boss_dict.keys()) + 8
+
+        for location in boss_dict.keys():
+            file_object.write(
+                str.ljust(str(location), width) +
+                str(boss_dict[location]) +
+                '\n'
+            )
+
+        file_object.write('\n')
+
+    def write_boss_stat_spoilers(self, file_object):
+
+        scale_dict = self.config.boss_rank
+
+        file_object.write("Boss Stats\n")
+        file_object.write("----------\n")
+        for boss_id in self.config.boss_assign_dict.values():
+            file_object.write(str(boss_id)+':')
+            if boss_id in scale_dict.keys():
+                file_object.write(
+                    f" Key Item scale rank = {scale_dict[boss_id]}"
+                )
+            file_object.write('\n')
+
+            boss = self.config.boss_data_dict[boss_id]
+            part_ids = list(dict.fromkeys(boss.ids))
+            for part_id in part_ids:
+                if len(part_ids) > 1:
+                    file_object.write(f"Part: {part_id}\n")
+                part_str = str(self.config.enemy_dict[part_id])
+                # put the string one tab out
+                part_str = '\t' + str.replace(part_str, '\n', '\n\t')
+                file_object.write(part_str+'\n')
+            file_object.write('\n')
 
     def randomize(self):
 
         Flags = rset.GameFlags
         gameflags = self.settings.gameflags
         rom_data = self.ctrom.rom_data
-        
+
         if Flags.FIX_GLITCH in gameflags:
             self.fix_glitches()
 
@@ -83,7 +276,7 @@ class Randomizer:
             fastmagic.process_ctrom(self.ctrom, self.settings, self.config)
 
         tabwriter.process_ctrom(self.ctrom, self.settings, self.config)
-        treasures.process_ctrom(self.ctrom, self.settings, self.config)
+        treasurewriter.process_ctrom(self.ctrom, self.settings, self.config)
         enemyrewards.process_ctrom(self.ctrom, self.settings, self.config)
 
     # Just apply the various glitch fix patches
@@ -519,57 +712,16 @@ def generate_rom():
 
 def main():
 
-    with open('./roms/jets_test.sfc', 'rb') as infile:
+    with open('./roms/ct.sfc', 'rb') as infile:
         rom = infile.read()
 
     settings = rset.Settings.get_race_presets()
-
-    config = cfg.RandoConfig()
-    ctrom = CTRom(rom, True)
-
-    space_manager = ctrom.rom_data.space_manager
-
-    # Set up some safe free blocks.
-    space_manager.mark_block((0, 0x40FFFF),
-                             FSWriteType.MARK_USED)
-    space_manager.mark_block((0x411007, 0x5B8000),
-                             FSWriteType.MARK_FREE)
-    
-    settings = settings
-
-    # Test some treasure writing
-    t_assign = config.treasure_assign_dict
-    
-    TID = ctenums.TreasureID
-
-    print(t_assign[TID.TABAN_GIFT_HELM])
-    t_assign[TID.TABAN_GIFT_HELM].write_to_ctrom(ctrom)
-    t_assign[TID.MANORIA_BROMIDE_1].write_to_ctrom(ctrom)
-
-    ctrom.write_all_scripts_to_rom()
-
-    with open('./roms/jets_test_out.sfc', 'wb') as outfile:
-        ctrom.rom_data.seek(0)
-        outfile.write(ctrom.rom_data.read())
-    
-    '''
-    filename = './roms/ct.sfc'
-    with open(filename, 'rb') as infile:
-        rom = infile.read()
-
-    settings = rset.Settings.get_race_presets()
-
+    settings.gameflags |= rset.GameFlags.DUPLICATE_CHARS
+    settings.gameflags |= rset.GameFlags.BOSS_SCALE
     rando = Randomizer(rom, settings)
-    rando.randomize()
-    '''
-    
+    rando.write_config()
+    rando.write_spoiler_log('spoiler_log.txt')
+
+
 if __name__ == "__main__":
     main()
-    '''
-  if len(sys.argv) > 1 and sys.argv[1] == "-c":
-    command_line()
-    generate_rom()
-    input("Press Enter to exit.")
-  else:
-    gui.guiMain()
-    '''

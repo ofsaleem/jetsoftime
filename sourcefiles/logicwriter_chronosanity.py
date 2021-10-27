@@ -264,21 +264,22 @@ def commitKeyItems(settings: rset.Settings,
     for location in chosenLocations:
         location.writeKeyItem(config)
 
-    # Go through any baseline locations not assigned an item and place a 
+    # Go through any baseline locations not assigned an item and place a
     # piece of treasure. Treasure quality is based on the location's loot tier.
     for locationGroup in locationGroups:
         for location in locationGroup.getLocations():
             if type(location) == logictypes.BaselineLocation and \
                (location not in chosenLocations):
 
-                # This is a baseline location without a key item.  
+                # This is a baseline location without a key item.
                 # Assign a piece of treasure.
                 dist = treasure.get_treasure_distribution(settings,
                                                           location.lootTier)
                 treasureCode = dist.get_random_item()
                 location.writeTreasure(treasureCode, config)
 
-    writeSpoilerLog(chosenLocations, charLocations)
+    config.key_item_locations = chosenLocations
+    # writeSpoilerLog(chosenLocations, charLocations)
 
 
 def main():
@@ -289,7 +290,15 @@ def main():
     settings.gameflags |= rset.GameFlags.CHRONOSANITY
 
     config = cfg.RandoConfig(rom)
+    config.logic_config = logicfactory.getGameConfig(settings, config)
+
     commitKeyItems(settings, config)
+
+    key_item_dict = {(loc, config.treasure_assign_dict[loc].held_item)
+                     for loc in config.treasure_assign_dict.keys()
+                     if config.treasure_assign_dict[loc].held_item
+                     in config.logic_config.keyItemList}
+    print(key_item_dict)
     pass
 
 
