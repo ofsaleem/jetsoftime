@@ -284,8 +284,8 @@ late_bosses = [
 
 
 # This method just alters the cfg.RandoConfig object.
-def process_ctrom(ctrom: CTRom, settings: rset.Settings,
-                  config: cfg.RandoConfig):
+def write_enemy_rewards_to_config(settings: rset.Settings,
+                                  config: cfg.RandoConfig):
 
     # Maybe this dict can be set up globally with the enemy lists
     enemy_group_dict = dict()

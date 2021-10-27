@@ -28,6 +28,23 @@ class EnemyStats:
 
     name: ctstrings.CTString = ctstrings.CTString.from_ascii('Nu')
 
+    def __str__(self):
+        ret = ''
+        stats = [str.rjust(str(x), 3)
+                 for x in [self.speed, self.offense, self.defense,
+                           self.magic, self.mdef]]
+        stat_string = ' '.join(x for x in stats)
+        ret += (f"Name: {self.name}\n"
+                f"HP = {self.hp}\tLevel = {self.level}\n"
+                f"XP = {self.xp}\tTP = {self.tp}\tGP={self.gp}\n"
+                "Spd Off Def Mag Mdf\n" +
+                stat_string + '\n'
+                f"Drop = {self.drop_item}\n"
+                f"Charm = {self.charm_item}")
+
+        return ret
+                
+
     # bossscaler.py uses lists of stats to do the scaling.  This method takes
     # one of those lists and replaces the relevant stats in the class.
     def replace_from_stat_list(self, stat_list: list[int]):
