@@ -174,6 +174,7 @@ class LocID(StrIntEnum):
     # Rocks
     DENADORO_MTS_MASAMUNE_EXTERIOR = 0x8F
     LARUBA_RUINS = 0x124
+    KAJAR_ROCK_ROOM = 0x167
 
     @classmethod
     def get_boss_locations(cls):
@@ -1177,3 +1178,63 @@ class RecruitID(StrIntEnum):
     DACTYL_NEST = auto()
     PROTO_DOME = auto()
     FROGS_BURROW = auto()
+
+
+class TechID(StrIntEnum):
+    NONE = 0
+    CYCLONE = 1
+    SLASH = 2
+    LIGHTNING = 3
+    SPINCUT = 4
+    LIGHTNING_2 = 5
+    LIFE = 6
+    CONFUSE = 7
+    LUMINAIRE = 8
+    AURA = 9
+    PROVOKE = 0xA
+    ICE = 0xB
+    CURE = 0xC
+    HASTE = 0xD
+    ICE_2 = 0xE
+    CURE_2_M = 0xF
+    LIFE_2_M = 0x10
+    FLAME_TOSS = 0x11
+    HYPNO_WAVE = 0x12
+    FIRE = 0x13
+    NAPALM = 0x14
+    PROTECT = 0x15
+    FIRE_2 = 0x16
+    MEGABOMB = 0x17
+    FLARE = 0x18
+    ROCKET_PUNCH = 0x19
+    CURE_BEAM = 0x1A
+    LASER_SPIN = 0x1B
+    ROBO_TACKLE = 0x1C
+    HEAL_BEAM = 0x1D
+    UZZI_PUNCH = 0x1E
+    AREA_BOMB = 0x1F
+    SHOCK = 0x20
+    SLURP = 0x21
+    SLURPCUT = 0x22
+    WATER = 0x23
+    HEAL = 0x24
+    LEAP_SLASH = 0x25
+    WATER_2 = 0x26
+    CURE_2_F = 0x27
+    FROGSQUASH = 0x28
+    KISS = 0x29
+    ROLLO_KICK = 0x2A
+    CAT_ATTACK = 0x2B
+    ROCK_THROW = 0x2C
+    CHARM = 0x2D
+    TAIL_SPIN = 0x2E
+    DINO_TAIL = 0x2F
+    TRIPLE_KICK = 0x30
+    LIGHTNING_2_M = 0x31
+    ICE_2_M = 0x32
+    FIRE_2_M = 0x33
+    DARK_BOMB = 0x34
+    MAGIC_WALL = 0x35
+    DARK_MIST = 0x36
+    ANTI_LIFE = 0x37
+    DARK_MATTER = 0x38
