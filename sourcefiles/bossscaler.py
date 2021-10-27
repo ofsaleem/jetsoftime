@@ -80,10 +80,14 @@ def set_boss_power(settings: rset.Settings, config: cfg.RandoConfig):
     # First, boss scaling only works for normal logic
     chronosanity = rset.GameFlags.CHRONOSANITY in settings.gameflags
     lost_worlds = rset.GameFlags.LOST_WORLDS in settings.gameflags
+    boss_scaling = rset.GameFlags.BOSS_SCALE in settings.gameflags
 
     if chronosanity or lost_worlds:
         print('Boss scaling not compatible with either Lost Worlds or '
               'Chronosanity.  Returning.')
+        return
+
+    if not boss_scaling:
         return
 
     game_config = logicfactory.getGameConfig(settings, config)
@@ -221,6 +225,8 @@ def set_boss_power(settings: rset.Settings, config: cfg.RandoConfig):
         elif proto_char in [CharID.CRONO, CharID.MAGUS]:
             boss_rank[factoryboss] = 2
 
+    config.boss_rank = boss_rank
+
     for boss in boss_rank.keys():
         print(f"{boss} has rank {boss_rank[boss]}")
         boss_data = config.boss_data_dict[boss]
@@ -253,8 +259,6 @@ def rank_up_stats(stats: EnemyStats, rank: int) -> list[int]:
     stat_list = [stats.hp, stats.level, stats.magic,
                  stats.mdef, stats.offense, stats.defense,
                  stats.xp, stats.gp, stats.tp]
-    print(stat_list)
-    input()
 
     stat_max = [0x7FFF, 0xFF, 0xFF,
                 0xFF, 0xFF, 0xFF,

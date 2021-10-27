@@ -1121,7 +1121,8 @@ def duplicate_maps(fsrom: FS):
 
 # This function needs to write the boss assignment to the config respecting
 # the provided settings.
-def write_config(settings: rset.Settings, config: cfg.RandoConfig):
+def write_assignment_to_config(settings: rset.Settings,
+                               config: cfg.RandoConfig):
 
     boss_settings = settings.ro_settings
 
@@ -1171,6 +1172,7 @@ def write_config(settings: rset.Settings, config: cfg.RandoConfig):
 
         # Now do the assignment
         random.shuffle(one_part_bosses)
+        print(one_part_bosses)
 
         for i in range(len(one_part_locations)):
             boss = one_part_bosses[i]
@@ -1178,6 +1180,8 @@ def write_config(settings: rset.Settings, config: cfg.RandoConfig):
             config.boss_assign_dict[location] = boss
 
         random.shuffle(two_part_bosses)
+        print(two_part_bosses)
+        input()
 
         for i in range(len(two_part_locations)):
             boss = two_part_bosses[i]
@@ -1186,6 +1190,8 @@ def write_config(settings: rset.Settings, config: cfg.RandoConfig):
     else:  # Ignore part count, just randomize!
         locations = boss_settings.loc_list
         bosses = boss_settings.boss_list
+
+        random.shuffle(bosses)
 
         if len(bosses) < len(locations):
             print('RO Error: Fewer bosses than locations given.')
@@ -1374,8 +1380,8 @@ def scale_bosses_given_assignment(settings: rset.Settings,
     config.boss_data_dict = scaled_data
 
 
-def assign_bosses(ctrom: CTRom, settings: rset.Settings,
-                  config: cfg.RandoConfig):
+def write_bosses_to_ctrom(ctrom: CTRom, settings: rset.Settings,
+                          config: cfg.RandoConfig):
 
     # Config should have a list of what bosses are to be placed where, so
     # now it's just a matter of writing them to the ctrom.
