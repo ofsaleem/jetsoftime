@@ -101,9 +101,8 @@ alvlitems = [0xBB,0x0E,0x53,0x54,0x55,0x28,0x39,0x91,0x86,0x8F,0x6C,0x7A,0x6D,0x
 alvlconsumables = [0xC3,0xC5]
 
 
-def process_rom(ctrom: CTRom, settings: rset.Settings,
-                config: cfg.RandoConfig):
-
+def write_shops_to_config(settings: rset.Settings,
+                          config: cfg.RandoConfig):
     regular_dist = tw.TreasureDist(
         (6, low_lvl_consumables + passable_lvl_consumables),
         (4, passable_lvl_items + mid_lvl_items)
@@ -148,7 +147,9 @@ def process_rom(ctrom: CTRom, settings: rset.Settings,
     # With the whole shop list in hand, you can do some global guarantees
     # here if desired.  For example, guarantee ethers/midtonics in LW.
 
-    # Modify prices.  Should this be in a separate function?
+
+def write_item_prices_to_config(settings: rset.Settings,
+                                config: cfg.RandoConfig):
     items_to_modify = list(ItemID)
 
     # Set up the list of items to randomize
