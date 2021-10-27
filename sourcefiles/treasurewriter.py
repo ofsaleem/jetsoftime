@@ -298,8 +298,9 @@ taban_weapon_gifts: list[ItemID] = [
     ItemID.WONDERSHOT, ItemID.TERRA_ARM, ItemID.CRISIS_ARM, ItemID.DOOMSICKLE,
 ]
 
+# Doomsickle is in the original.  Removed.
 trade_ranged: list[ItemID] = [
-    ItemID.VALKERYE, ItemID.SHOCK_WAVE, ItemID.DOOMSICKLE
+    ItemID.VALKERYE, ItemID.SHOCK_WAVE, # ItemID.DOOMSICKLE
 ]
 trade_accessory: list[ItemID] = [
     ItemID.GOLD_ERNG, ItemID.GOLD_STUD, ItemID.PRISMSPECS, ItemID.AMULET,
@@ -487,15 +488,15 @@ def get_treasure_distribution(settings: rset.Settings,
         return treasure_dists[settings.item_difficulty][treasure_tier]
 
 
-def process_ctrom(ctrom: CTRom, settings: rset.Settings,
-                  config: cfg.RandoConfig):
+def write_treasures_to_config(settings: rset.Settings,
+                              config: cfg.RandoConfig):
 
     assign = config.treasure_assign_dict
 
     # Do standard treasure chests
     for tier in TreasureLocTier:
         treasures = treasure_tiers[tier]
-        dist = get_treasure_distribution(settings.item_difficulty, tier)
+        dist = get_treasure_distribution(settings, tier)
 
         for treasure in treasures:
             assign[treasure].held_item = dist.get_random_item()
@@ -504,6 +505,7 @@ def process_ctrom(ctrom: CTRom, settings: rset.Settings,
     specials = [
         TID.TABAN_GIFT_HELM, TID.TABAN_GIFT_WEAPON,
         TID.TRADING_POST_ARMOR, TID.TRADING_POST_HELM,
+        TID.TRADING_POST_ACCESSORY,
         TID.TRADING_POST_MELEE_WEAPON,
         TID.TRADING_POST_RANGED_WEAPON,
         TID.TRADING_POST_TAB,
@@ -512,6 +514,7 @@ def process_ctrom(ctrom: CTRom, settings: rset.Settings,
     item_lists = [
         taban_helm_gifts, taban_weapon_gifts,
         trade_armors, trade_helms,
+        trade_accessory,
         trade_melee,
         trade_ranged,
         trade_tabs,
@@ -522,6 +525,17 @@ def process_ctrom(ctrom: CTRom, settings: rset.Settings,
         treasure = specials[i]
         items = item_lists[i]
         assign[treasure].held_item = rand.choice(items)
+
+    # finally rocks
+    rock_tids = [TID.DENADORO_ROCK, TID.GIANTS_CLAW_ROCK,
+                 TID.LARUBA_ROCK, TID.KAJAR_ROCK, TID.BLACK_OMEN_TERRA_ROCK]
+
+    rocks = [ItemID.GOLD_ROCK, ItemID.BLUE_ROCK,
+             ItemID.SILVERROCK, ItemID.BLACK_ROCK, ItemID.WHITE_ROCK]
+    rand.shuffle(rocks)
+
+    for ind, tid in enumerate(rock_tids):
+        assign[tid].held_item = rocks[ind]
 
 
 def choose_item(pointer,difficulty,tab_treasures):
