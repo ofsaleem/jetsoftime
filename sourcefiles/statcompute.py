@@ -176,6 +176,8 @@ class PCStats:
 
         if self.xp_next != self.xp_thresh[self.level]:
             print('Warning. xp_thresh does not match stat block')
+            print(f"Level: self.level")
+            print(f"{self.xp_next}, {self.xp_thresh[self.level]}")
 
         self.tp_next = \
             get_value_from_bytes(self.stat_block[0x2D:0x2D+2])
@@ -221,6 +223,18 @@ class PCStats:
 
         # actually change the level...
         self.level = new_level
+
+    def get_stat_string(self) -> str:
+        ret = ''
+        ret += f"Level: {self.level}\n"
+        ret += f"Tech Level: {self.tech_level}\n"
+        ret += f"Max HP: {self.max_hp}\t Max MP: {self.max_mp}\n"
+        ret += 'Pow Stm Spd Hit Evd Mag Mdf\n'
+        temp_cur = get_stat_base_order(self.cur_stats)
+        ret += ' ' + ' '.join(f"{x:02d} " for x in temp_cur)
+        ret += '\n'
+
+        return ret
 
     def print_data(self):
         self.__update_statblock()
