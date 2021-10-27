@@ -3,6 +3,45 @@ from techdb import TechDB
 import copy
 import random
 
+import randosettings as rset
+import randoconfig as cfg
+
+
+# These are the relative frequencies for "balanced" tech rando
+# Just make this a script variable instead of duplicating it.
+freqs = [[8, 7, 6, 4, 3, 5, 1, 2],  # Crono
+         [7, 8, 6, 5, 1, 2, 3, 4],  # Marle
+         [8, 4, 6, 5, 7, 2, 3, 1],  # Lucca
+         [8, 7, 6, 2, 3, 1, 5, 4],  # Robo
+         [8, 6, 7, 1, 3, 2, 4, 5],  # Frog
+         [8, 7, 5, 2, 6, 4, 3, 1],  # Ayla
+         [5, 5, 5, 7, 8, 2, 3, 1]]  # Magus
+
+
+# This needs to be done after char duplicate assignments since balanced tech
+# distribution varies by character.
+def write_tech_order_to_config(settings: rset.Settings,
+                               config: cfg.RandoConfig):
+
+    global freqs
+
+    char_man = config.char_manager
+    tech_order = settings.techorder
+    for char_id in range(7):
+        if tech_order == rset.TechOrder.FULL_RANDOM:
+            perm = generate_permutation_freq([1 for i in range(8)])
+        elif tech_order == rset.TechOrder.BALANCED_RANDOM:
+            assigned_id = char_man.pcs[char_id].assigned_char
+            perm = generate_permutation_freq(freqs[assigned_id])
+        else:
+            perm = [i for i in range(8)]
+
+        char_man.pcs[char_id].tech_permutation = perm[:]
+        # TODO: Make sure it's safe to randomize techs now.  It should be,
+        #       but I always did it at the very end before.  For now, let's
+        #       give it a shot and remember this if things break.
+        randomize_pc_techs(config.techdb, char_id, perm)
+
 
 # generate a random permutation where each object has a different probability
 # of being drawn.
@@ -37,13 +76,7 @@ def randomize_single_techs_uniform(db):
 
 
 def randomize_single_techs_balanced(db):
-    freqs = [[8, 7, 6, 4, 3, 5, 1, 2],
-             [7, 8, 6, 5, 1, 2, 3, 4],
-             [8, 4, 6, 5, 7, 2, 3, 1],
-             [8, 7, 6, 2, 3, 1, 5, 4],
-             [8, 6, 7, 1, 3, 2, 4, 5],
-             [8, 7, 5, 2, 6, 4, 3, 1],
-             [5, 5, 5, 7, 8, 2, 3, 1]]
+    global freqs
 
     for i in range(7):
         perm = generate_permutation_freq(freqs[i])
