@@ -10,6 +10,7 @@ from byteops import to_little_endian, get_value_from_bytes, to_file_ptr
 from bossdata import get_boss_data_dict
 from ctenums import ItemID, LocID, TreasureID as TID, CharID, ShopID, \
     RecruitID, BossID
+import techdb
 # from ctevent import ScriptManager as SM, Event
 from ctrom import CTRom
 from freespace import FSWriteType  # Only for the test main() code
@@ -237,6 +238,10 @@ class ShopManager:
     def __str__(self, price_manager: PriceManager = None):
         ret = ''
         for shop in sorted(self.shop_dict.keys()):
+            if shop in [ShopID.EMPTY_12, ShopID.EMPTY_14,
+                        ShopID.LAST_VILLAGE_UPDATED]:
+                continue
+            
             ret += str(shop)
             ret += ':\n'
             for item in self.shop_dict[shop]:
@@ -812,7 +817,7 @@ class RandoConfig:
                 function_id=0x01,
                 item_num=0
             ),
-            TID.NORTHERN_RUINS_BACK_LEFT_SEALED_1000: ScriptTreasure(
+            TID.NORTHERN_RUINS_BACK_LEFT_SEALED_600: ScriptTreasure(
                 location=LocID.NORTHERN_RUINS_ANTECHAMBER,
                 object_id=0x10,
                 function_id=0x01,
@@ -824,7 +829,7 @@ class RandoConfig:
                 function_id=0x01,
                 item_num=0
             ),
-            TID.NORTHERN_RUINS_BACK_RIGHT_SEALED_1000: ScriptTreasure(
+            TID.NORTHERN_RUINS_BACK_RIGHT_SEALED_600: ScriptTreasure(
                 location=LocID.NORTHERN_RUINS_ANTECHAMBER,
                 object_id=0x11,
                 function_id=0x01,
@@ -1026,6 +1031,11 @@ class RandoConfig:
                 location=LocID.LARUBA_RUINS,
                 object_id=0x0D,
                 function_id=0x01
+            ),
+            TID.KAJAR_ROCK: ScriptTreasure(
+                location=LocID.KAJAR_ROCK_ROOM,
+                object_id=0x08,
+                function_id=0x01
             )
             # Tabs later if they're going to be randomized
             # GUARDIA_FOREST_POWER_TAB_600: auto()
@@ -1108,10 +1118,15 @@ class RandoConfig:
         }
 
         self.boss_data_dict = get_boss_data_dict(rom)
+        self.boss_rank = dict()
         self.enemy_dict = enemystats.get_stat_dict(rom)
         self.shop_manager = ShopManager(rom)
         self.price_manager = PriceManager(rom)
         self.char_manager = CharManager(rom)
+
+        self.key_item_locations = []
+
+        self.techdb = techdb.TechDB.get_default_db(rom)
 
     def write_to_ctrom(self, ctrom: CTRom):
         # Write enemies out
