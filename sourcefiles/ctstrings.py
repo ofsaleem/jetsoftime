@@ -242,10 +242,14 @@ class CTString(bytearray):
         return cls(cls.huffman_tree.compress(array))
 
     @classmethod
+    def ct_bytes_to_techname(cls, array: bytes):
+        return CTString(array).to_ascii(techname=True)
+    
+    @classmethod
     def ct_bytes_to_ascii(cls, array: bytes):
         return CTString(array).to_ascii()
 
-    def to_ascii(self):
+    def to_ascii(self, techname=False):
         '''Turns this CTString into a python string'''
 
         ret_str = ''
@@ -259,12 +263,15 @@ class CTString(bytearray):
                 keyword = self.keywords[cur_byte]
                 ret_str += f"{{{keyword}}}"
             elif cur_byte in range(0x21, 0xA0):
-                x = self.huffman_table[cur_byte-0x21]
-                # print(f"substr: {x}")
-                x = CTString(x).to_ascii()
-                # print(f"substr: {x}")
-                ret_str += x
-                # ret_str += f"{{:subst {cur_byte:02X}:}}"
+                if techname and cur_byte == 0x2F:
+                    ret_str += '*'
+                else:
+                    x = self.huffman_table[cur_byte-0x21]
+                    # print(f"substr: {x}")
+                    x = CTString(x).to_ascii()
+                    # print(f"substr: {x}")
+                    ret_str += x
+                    # ret_str += f"{{:subst {cur_byte:02X}:}}"
             elif cur_byte in range(0xA0, 0xBA):
                 ret_str += chr(cur_byte-0xA0+0x41)
             elif cur_byte in range(0xBA, 0xD4):
