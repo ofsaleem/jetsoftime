@@ -14,10 +14,76 @@ import ipswriter
 from techdb import TechDB
 from byteops import get_record, set_record, to_little_endian, \
     update_ptrs, to_rom_ptr, print_bytes
+from ctenums import CharID, RecruitID
 from statcompute import PCStats as PC
 import scriptextend as scripts
 
+import randoconfig as cfg
+import randosettings as rset
 
+
+# This needs to be called BEFORE assigning key items
+def write_pcs_to_config(settings: rset.Settings, config: cfg.RandoConfig):
+    # First, choose the locations for each character
+    chars = [CharID(i) for i in range(7)]
+    random.shuffle(chars)
+
+    char_man = config.char_manager
+    lost_worlds = rset.GameFlags.LOST_WORLDS in settings.gameflags
+
+    for ind, recruit_spot in enumerate(config.char_assign_dict.keys()):
+        # print(f"{ind}: {chars[ind]}")
+        config.char_assign_dict[recruit_spot].held_char = chars[ind]
+
+        # Set level/tech level based on placed location
+        # LW characters are lv 15, tech lv 3.  Same as proto, dactyl, frog.
+        if lost_worlds or recruit_spot in [RecruitID.PROTO_DOME,
+                                           RecruitID.DACTYL_NEST,
+                                           RecruitID.FROGS_BURROW]:
+            char_man.pcs[chars[ind]].stats.set_level(15)
+            char_man.pcs[chars[ind]].stats.set_tech_level(3)
+        elif recruit_spot in [RecruitID.STARTER_1, RecruitID.STARTER_2,
+                              RecruitID.CATHEDRAL]:
+            char_man.pcs[chars[ind]].stats.set_level(1)
+            char_man.pcs[chars[ind]].stats.set_tech_level(0)
+        elif recruit_spot == RecruitID.CASTLE:
+            char_man.pcs[chars[ind]].stats.set_level(5)
+            char_man.pcs[chars[ind]].stats.set_tech_level(2)
+        else:
+            print("Error: Should never see this")
+            exit()
+
+    # Now, reassign characters if duplicates is on
+    if rset.GameFlags.DUPLICATE_CHARS in settings.gameflags:
+        # Catch bad char_choices here?
+        choices = [CharID(random.choice(settings.char_choices[i]))
+                   for i in range(7)]
+
+        new_stats = [copy.deepcopy(char_man.pcs[choices[i]].stats)
+                     for i in range(7)]
+
+        for i in range(7):
+            orig_id = i
+            orig_lvl = char_man.pcs[i].stats.level
+            orig_tech_lvl = char_man.pcs[i].stats.tech_level
+
+            new_stats[i].set_level(orig_lvl)
+            new_stats[i].set_tech_level(orig_tech_lvl)
+
+            # This could be prettier.  The first byte in the stat block needs
+            # to have the pc's index in it.
+            new_stats[i].stat_block[0] = orig_id
+
+            char_man.pcs[i].stats = new_stats[i]
+            char_man.pcs[i].assigned_char = choices[i]
+
+        dup_duals = rset.GameFlags.DUPLICATE_TECHS in settings.gameflags
+        config.techdb = get_reassign_techdb(config.techdb,
+                                            choices,
+                                            dup_duals)
+
+
+# TODO: Revisit this now that I've done a better job in ctstring.py
 def get_ct_name(string):
     return fix_ct_str_len(to_ct_str(string), TechDB.name_size)
 
@@ -1271,7 +1337,7 @@ def reassign_tech_refs(rom, db, reassign):
     # $C2/91B4 FC DB 91    JSR ($91DB,x)[$C2:0CA9]
     # These are pointers for damage formulas for the menu.  They do not seem
     # to be used for combat.  Power tabs boost Luno's atack in battle but not
-    # on the menu.
+    # on the menu if this is unchanged.
     atk_forms = rom[0x0291DB:0x0291DB+7*2]
     atk_form_start = 0x0291DB
 
@@ -1282,23 +1348,6 @@ def reassign_tech_refs(rom, db, reassign):
         to_start = atk_form_start+2*to_ind
         from_start = 2*from_ind
         rom[to_start:to_start+2] = atk_forms[from_start:from_start+2]
-
-
-# Not needed anymore?  Functionality moved into get_reassign_techdb()
-def reassign_techs(rom, db, new_db, reassign):
-
-    # We need to keep unaltered pc data around.  Consider just ripping out the
-    # needed bits instead.
-
-    # Make a db with the right menu/battle groups but no techs added yet
-    new_db = max_expand_empty_db(db, reassign)
-
-    for i in range(7):
-        change_single_techs(reassign[i], i, db, new_db)
-        change_basic_attacks(reassign[i], i, db, new_db)
-
-    update_rock_techs(rom, db, reassign)
-    update_targetting(rom, db, reassign)
 
 
 def change_pc_graphics(from_ind, to_ind,
@@ -2115,7 +2164,7 @@ def reassign_characters_file(filename, char_choices, dup_duals,
             ipswriter.write_patch_objs(telepod_patch, outfile)
             ipswriter.write_patch_objs(burrow_patch, outfile)
             ipswriter.write_patch_objs(choras_patch, outfile)
-            
+
             fix_burrow(rom, outfile)
 
 
