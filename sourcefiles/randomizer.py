@@ -94,7 +94,7 @@ class Randomizer:
 
         # Enemy rewards
         enemyrewards.write_enemy_rewards_to_config(self.settings, self.config)
-
+        
         # Key item config.  Important that this goes after treasures because
         # otherwise the treasurewriter can overwrite key items placed by
         # Chronosanity
@@ -112,6 +112,9 @@ class Randomizer:
 
         # Boss scaling (done after boss rando)
         bossscaler.set_boss_power(self.settings, self.config)
+        print(self.config.enemy_dict[ctenums.EnemyID.DALTON_PLUS].drop_item)
+        input()
+
 
     def write_spoiler_log(self, filename):
         with open(filename, 'w') as outfile:
@@ -244,7 +247,7 @@ class Randomizer:
             file_object.write('\n')
 
             boss = self.config.boss_data_dict[boss_id]
-            part_ids = list(dict.fromkeys(boss.ids))
+            part_ids = list(dict.fromkeys(boss.scheme.ids))
             for part_id in part_ids:
                 if len(part_ids) > 1:
                     file_object.write(f"Part: {part_id}\n")

@@ -13,218 +13,220 @@ from ctenums import EnemyID, BossID, LocID
 T = TypeVar('T', bound='Boss')
 
 
+# The BossScheme gives data for
+#   1) What EnemyIDs make up the boss's parts (ids),
+#   2) Where the boss's parts should be drawn relative to part 0 (disps).
+#      The displacements are specified in pixels.
+#   3) What enemy slots each part should use (slots).  This matters because
+#      you can actually get crashes by putting enemies in the wrong slot.
+@dataclass
+class BossScheme:
+    ids: list[EnemyID] = field(default_factory=list)
+    disps: list[Tuple(int, int)] = field(default_factory=list)
+    slots: list[int] = field(default_factory=list)
+
+
+# The Boss class combines a BossScheme with whatever data is needed to scale
+# the boss.  Subclasses can define alternate scaling methods.
 @dataclass
 class Boss:
 
-    ids: list[int] = field(default_factory=list)
-    stats: list[EnemyStats] = field(default_factory=list)
-    disps: list[Tuple(int, int)] = field(default_factory=list)
+    scheme: BossScheme
     power: int = 0
-    slots: list[int] = field(default_factory=list)
-
-    def __str__(self):
-        ret = f"Boss Power Level: {self.power}\n"
-        for ind, partid in enumerate(self.ids):
-            stats = self.stats[ind]
-            ret += (f"Part {ind+1}\n"
-                    f"\tEnemyID: {partid}\n"
-                    f"\tName: {stats.name}\n"
-                    f"\tLvl = {stats.level}\n"
-                    f"\tHP = {stats.hp}\tSpd = {stats.speed}\n"
-                    f"\tOff = {stats.offense}\tDef = {stats.defense}\n"
-                    f"\tMag = {stats.magic}\tMdf = {stats.mdef}\n"
-                    f"\tXP = {stats.xp}\tTP = {stats.tp}\tGP={stats.gp}\n"
-                    f"\tDrop = {stats.drop_item}\n"
-                    f"\tCharm = {stats.charm_item}\n")
-
-        return ret
 
     # Make a subclass to implement scaling styles
-    def scale_relative_to(self, other: Boss):
+    # Stats are no longer stored inside of the Boss class, so we provide
+    # a dict to look up/set the stats.
+    def scale_relative_to(
+            self, other: Boss,
+            stat_dict: dict[EnemyID, EnemyStats]
+    ) -> list[EnemyStats]:
         raise NotImplementedError
 
     @classmethod
-    def generic_one_spot(cls: Type[T], rom, boss_id, slot, power) -> T:
-        ret = cls()
-        ret.ids = [boss_id]
-        ret.stats = [EnemyStats.from_rom(rom, boss_id)]
-        ret.disps = [(0, 0)]
-        ret.power = power
-        ret.slots = [slot]
+    def generic_one_spot(cls: Type[T], boss_id, slot, power) -> T:
 
-        return ret
+        ids = [boss_id]
+        disps = [(0, 0)]
+        slots = [slot]
+
+        scheme = BossScheme(ids, disps, slots)
+        power = power
+
+        return cls(scheme, power)
 
     @classmethod
-    def generic_multi_spot(cls: Type[T], rom, boss_ids, disps,
+    def generic_multi_spot(cls: Type[T], boss_ids, disps,
                            slots, power) -> T:
-        ret = cls()
-        ret.ids = boss_ids[:]
-        ret.stats = [EnemyStats.from_rom(rom, x) for x in ret.ids]
-        ret.slots = slots[:]
-        ret.disps = disps[:]
-        ret.power = power
 
-        return ret
+        ids = boss_ids[:]
+        disps = disps[:]
+        slots = slots[:]
 
-    @classmethod
-    def ATROPOS_XR(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.ATROPOS_XR, 3, 20)
+        scheme = BossScheme(ids, disps, slots)
+        power = power
+
+        return cls(scheme, power)
 
     @classmethod
-    def DALTON_PLUS(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.DALTON_PLUS, 3, 30)
+    def ATROPOS_XR(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.ATROPOS_XR, 3, 20)
+
+    @classmethod
+    def DALTON_PLUS(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.DALTON_PLUS, 3, 30)
 
     # Note to self: Extra grinder objects at end of script?
     @classmethod
-    def DRAGON_TANK(cls: Type[T], rom: bytearray) -> T:
+    def DRAGON_TANK(cls: Type[T]) -> T:
         ids = [EnemyID.DRAGON_TANK, EnemyID.TANK_HEAD, EnemyID.GRINDER]
         slots = [3, 9, 0xA]
         disps = [(0, 0), (0, 0), (0, 0)]
         power = 15
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     # Shell goes first for pushing on death's peak.  The first object will
     # be the static, pushable one.
     @classmethod
-    def ELDER_SPAWN(cls: Type[T], rom: bytearray) -> T:
+    def ELDER_SPAWN(cls: Type[T]) -> T:
         ids = [EnemyID.ELDER_SPAWN_SHELL,
                EnemyID.ELDER_SPAWN_HEAD]
         slots = [3, 9]
         disps = [(0, 0), (-8, 1)]
         power = 30
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def FLEA(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.FLEA, 7, 15)
+    def FLEA(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.FLEA, 7, 15)
 
     @classmethod
-    def FLEA_PLUS(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.FLEA_PLUS, 7, 20)
+    def FLEA_PLUS(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.FLEA_PLUS, 7, 20)
 
     # This does virtually nothing since guardian sprite is built into the
     # background.  Eventually replace with lavos versions?
     @classmethod
-    def GUARDIAN(cls: Type[T], rom: bytearray) -> T:
+    def GUARDIAN(cls: Type[T]) -> T:
         ids = [EnemyID.GUARDIAN, EnemyID.GUARDIAN_BIT,
                EnemyID.GUARDIAN_BIT]
         slots = [3, 7, 8]
         disps = [(0, 0), (-0x50, -0x98), (0x40, -0x98)]
         power = 15
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def GIGA_GAIA(cls: Type[T], rom: bytearray) -> T:
+    def GIGA_GAIA(cls: Type[T]) -> T:
         ids = [EnemyID.GIGA_GAIA_HEAD, EnemyID.GIGA_GAIA_LEFT,
                EnemyID.GIGA_GAIA_RIGHT]
         slots = [6, 7, 9]
         disps = [(0, 0), (0x40, 0x30), (-0x40, 0x30)]
         power = 25
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def GIGA_MUTANT(cls: Type[T], rom: bytearray) -> T:
+    def GIGA_MUTANT(cls: Type[T]) -> T:
         ids = [EnemyID.GIGA_MUTANT_HEAD, EnemyID.GIGA_MUTANT_BOTTOM]
         slots = [3, 9]
         disps = [(0, 0), (0, 0)]
         power = 35
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def GOLEM(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.GOLEM, 3, 20)
+    def GOLEM(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.GOLEM, 3, 20)
 
     @classmethod
-    def GOLEM_BOSS(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.GOLEM_BOSS, 3, 20)
+    def GOLEM_BOSS(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.GOLEM_BOSS, 3, 20)
 
     @classmethod
-    def HECKRAN(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.HECKRAN, 3, 12)
+    def HECKRAN(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.HECKRAN, 3, 12)
 
     # TODO: Check on this.  It should be the displacement is -8 but that
     #       doesn't work...sometimes?  It's weird.
     @classmethod
-    def LAVOS_SPAWN(cls: Type[T], rom: bytearray) -> T:
+    def LAVOS_SPAWN(cls: Type[T]) -> T:
         ids = [EnemyID.LAVOS_SPAWN_SHELL,
                EnemyID.LAVOS_SPAWN_HEAD]
         slots = [3, 9]
         disps = [(0, 0), (-0x7, 0)]
         power = 18
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def MASA_MUNE(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.MASA_MUNE, 6, 15)
+    def MASA_MUNE(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.MASA_MUNE, 6, 15)
 
     @classmethod
-    def MEGA_MUTANT(cls: Type[T], rom: bytearray) -> T:
+    def MEGA_MUTANT(cls: Type[T]) -> T:
         ids = [EnemyID.MEGA_MUTANT_HEAD,
                EnemyID.MEGA_MUTANT_BOTTOM]
         slots = [3, 7]
         disps = [(0, 0), (0, 0)]
         power = 30
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     # For own notes:  real screens are 0x20, 0x21, 0x22.  0x23 never shows
     @classmethod
-    def MOTHER_BRAIN(cls: Type[T], rom: bytearray) -> T:
+    def MOTHER_BRAIN(cls: Type[T]) -> T:
         ids = [EnemyID.MOTHERBRAIN,
                EnemyID.DISPLAY, EnemyID.DISPLAY, EnemyID.DISPLAY]
         slots = [3, 6, 7, 8]
         disps = [(0, 0), (-0x50, -0x1F), (-0x10, -0x2F), (0x40, -0x1F)]
         power = 25
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def NIZBEL(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.NIZBEL, 3, 15)
+    def NIZBEL(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.NIZBEL, 3, 15)
 
     @classmethod
-    def NIZBEL_II(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.NIZBEL_II, 3, 18)
+    def NIZBEL_II(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.NIZBEL_II, 3, 18)
 
     @classmethod
-    def RETINITE(cls: Type[T], rom: bytearray) -> T:
+    def RETINITE(cls: Type[T]) -> T:
         ids = [EnemyID.RETINITE_EYE, EnemyID.RETINITE_TOP,
                EnemyID.RETINITE_BOTTOM]
         slots = [3, 9, 6]
         disps = [(0, 0), (0, -0x8), (0, 0x28)]
         power = 15
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def R_SERIES(cls: Type[T], rom: bytearray) -> T:
+    def R_SERIES(cls: Type[T]) -> T:
         ids = [EnemyID.R_SERIES, EnemyID.R_SERIES, EnemyID.R_SERIES,
                EnemyID.R_SERIES]
         slots = [3, 4, 7, 8]
         disps = [(0, 0), (0, 0x20), (0x20, 0), (0x20, 0x20)]  # maybe wrong
         power = 15
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def RUST_TYRANO(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.RUST_TYRANO, 3, 15)
+    def RUST_TYRANO(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.RUST_TYRANO, 3, 15)
 
     @classmethod
-    def SLASH_SWORD(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.SLASH_SWORD, 3, 15)
+    def SLASH_SWORD(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.SLASH_SWORD, 3, 15)
 
     @classmethod
-    def SUPER_SLASH(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.SUPER_SLASH, 7, 20)
+    def SUPER_SLASH(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.SUPER_SLASH, 7, 20)
 
     @classmethod
-    def SON_OF_SUN(cls: Type[T], rom: bytearray) -> T:
+    def SON_OF_SUN(cls: Type[T]) -> T:
         ids = [EnemyID.SON_OF_SUN_EYE,
                EnemyID.SON_OF_SUN_FLAME,
                EnemyID.SON_OF_SUN_FLAME,
@@ -233,37 +235,36 @@ class Boss:
         slots = [3, 4, 5, 6, 7]
         disps = [(0, 0), (-0x20, 0), (0x20, 0), (-0x10, 0x10), (0x10, 0x10)]
         power = 18
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def TERRA_MUTANT(cls: Type[T], rom: bytearray) -> T:
+    def TERRA_MUTANT(cls: Type[T]) -> T:
         ids = [EnemyID.TERRA_MUTANT_HEAD, EnemyID.TERRA_MUTANT_BOTTOM]
         slots = [3, 9]
         disps = [(0, 0), (0, 0)]
         power = 35
 
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def TWIN_GOLEM(cls: Type[T], rom: bytearray) -> T:
+    def TWIN_GOLEM(cls: Type[T]) -> T:
         ids = [EnemyID.TWIN_GOLEM, EnemyID.TWIN_GOLEM]
         slots = [3, 6]
         disps = [(-20, 0), (20, 0)]
         power = 30
-        return cls.generic_multi_spot(rom, ids, disps, slots, power)
+        return cls.generic_multi_spot(ids, disps, slots, power)
 
     @classmethod
-    def YAKRA(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.YAKRA, 3, 5)
+    def YAKRA(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.YAKRA, 3, 5)
 
     @classmethod
-    def YAKRA_XIII(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_one_spot(rom, EnemyID.YAKRA_XIII, 3, 15)
+    def YAKRA_XIII(cls: Type[T]) -> T:
+        return cls.generic_one_spot(EnemyID.YAKRA_XIII, 3, 15)
 
     @classmethod
-    def ZOMBOR(cls: Type[T], rom: bytearray) -> T:
-        return cls.generic_multi_spot(rom,
-                                      [EnemyID.ZOMBOR_TOP,
+    def ZOMBOR(cls: Type[T]) -> T:
+        return cls.generic_multi_spot([EnemyID.ZOMBOR_TOP,
                                        EnemyID.ZOMBOR_BOTTOM],
                                       [(0, 0), (0, 0x20)],
                                       [9, 3],
@@ -301,37 +302,37 @@ def get_default_boss_assignment():
 
 
 # Associate BossID with the Boss data structure.
-def get_boss_data_dict(rom: bytearray):
+def get_boss_data_dict():
     return {
-        BossID.ATROPOS_XR: LinearScaleBoss.ATROPOS_XR(rom),
-        BossID.DALTON_PLUS: LinearScaleBoss.DALTON_PLUS(rom),
-        BossID.DRAGON_TANK: LinearScaleBoss.DRAGON_TANK(rom),
-        BossID.ELDER_SPAWN: LinearScaleBoss.ELDER_SPAWN(rom),
-        BossID.FLEA: LinearScaleBoss.FLEA(rom),
-        BossID.FLEA_PLUS: LinearScaleBoss.FLEA_PLUS(rom),
-        BossID.GIGA_GAIA: LinearScaleBoss.GIGA_GAIA(rom),
-        BossID.GIGA_MUTANT: LinearScaleBoss.GIGA_MUTANT(rom),
-        BossID.GOLEM: LinearScaleBoss.GOLEM(rom),
-        BossID.GOLEM_BOSS: LinearScaleBoss.GOLEM_BOSS(rom),
-        BossID.GUARDIAN: LinearScaleBoss.GUARDIAN(rom),
-        BossID.HECKRAN: LinearScaleBoss.HECKRAN(rom),
-        BossID.LAVOS_SPAWN: LinearScaleBoss.LAVOS_SPAWN(rom),
-        BossID.MASA_MUNE: LinearScaleBoss.MASA_MUNE(rom),
-        BossID.MEGA_MUTANT: LinearScaleBoss.MEGA_MUTANT(rom),
-        BossID.MOTHER_BRAIN: LinearScaleBoss.MOTHER_BRAIN(rom),
-        BossID.NIZBEL: LinearScaleBoss.NIZBEL(rom),
-        BossID.NIZBEL_2: LinearScaleBoss.NIZBEL_II(rom),
-        BossID.RETINITE: LinearScaleBoss.RETINITE(rom),
-        BossID.R_SERIES: LinearScaleBoss.R_SERIES(rom),
-        BossID.RUST_TYRANO: LinearScaleBoss.RUST_TYRANO(rom),
-        BossID.SLASH_SWORD: LinearScaleBoss.SLASH_SWORD(rom),
-        BossID.SON_OF_SUN: LinearNoHPScaleBoss.SON_OF_SUN(rom),
-        BossID.SUPER_SLASH: LinearScaleBoss.SUPER_SLASH(rom),
-        BossID.TERRA_MUTANT: LinearScaleBoss.TERRA_MUTANT(rom),
-        BossID.TWIN_GOLEM: LinearScaleBoss.TWIN_GOLEM(rom),
-        BossID.YAKRA: LinearScaleBoss.YAKRA(rom),
-        BossID.YAKRA_XIII: LinearScaleBoss.YAKRA_XIII(rom),
-        BossID.ZOMBOR: LinearScaleBoss.ZOMBOR(rom)
+        BossID.ATROPOS_XR: LinearScaleBoss.ATROPOS_XR(),
+        BossID.DALTON_PLUS: LinearScaleBoss.DALTON_PLUS(),
+        BossID.DRAGON_TANK: LinearScaleBoss.DRAGON_TANK(),
+        BossID.ELDER_SPAWN: LinearScaleBoss.ELDER_SPAWN(),
+        BossID.FLEA: LinearScaleBoss.FLEA(),
+        BossID.FLEA_PLUS: LinearScaleBoss.FLEA_PLUS(),
+        BossID.GIGA_GAIA: LinearScaleBoss.GIGA_GAIA(),
+        BossID.GIGA_MUTANT: LinearScaleBoss.GIGA_MUTANT(),
+        BossID.GOLEM: LinearScaleBoss.GOLEM(),
+        BossID.GOLEM_BOSS: LinearScaleBoss.GOLEM_BOSS(),
+        BossID.GUARDIAN: LinearScaleBoss.GUARDIAN(),
+        BossID.HECKRAN: LinearScaleBoss.HECKRAN(),
+        BossID.LAVOS_SPAWN: LinearScaleBoss.LAVOS_SPAWN(),
+        BossID.MASA_MUNE: LinearScaleBoss.MASA_MUNE(),
+        BossID.MEGA_MUTANT: LinearScaleBoss.MEGA_MUTANT(),
+        BossID.MOTHER_BRAIN: LinearScaleBoss.MOTHER_BRAIN(),
+        BossID.NIZBEL: LinearScaleBoss.NIZBEL(),
+        BossID.NIZBEL_2: LinearScaleBoss.NIZBEL_II(),
+        BossID.RETINITE: LinearScaleBoss.RETINITE(),
+        BossID.R_SERIES: LinearScaleBoss.R_SERIES(),
+        BossID.RUST_TYRANO: LinearScaleBoss.RUST_TYRANO(),
+        BossID.SLASH_SWORD: LinearScaleBoss.SLASH_SWORD(),
+        BossID.SON_OF_SUN: LinearNoHPScaleBoss.SON_OF_SUN(),
+        BossID.SUPER_SLASH: LinearScaleBoss.SUPER_SLASH(),
+        BossID.TERRA_MUTANT: LinearScaleBoss.TERRA_MUTANT(),
+        BossID.TWIN_GOLEM: LinearScaleBoss.TWIN_GOLEM(),
+        BossID.YAKRA: LinearScaleBoss.YAKRA(),
+        BossID.YAKRA_XIII: LinearScaleBoss.YAKRA_XIII(),
+        BossID.ZOMBOR: LinearScaleBoss.ZOMBOR()
     }
 
 
@@ -377,31 +378,40 @@ def linear_scale_stats(stats: EnemyStats,
 
 class LinearScaleBoss(Boss):
 
-    def scale_relative_to(self, other: Boss):
+    def scale_relative_to(
+            self, other: Boss,
+            stat_dict: dict[EnemyID, EnemyStats]
+    ) -> list[EnemyStats]:
         # All this really uses is the other boss's power
         # Arguably, the HP will be set based on the other boss_obj
 
-        # print(f"from power = {self.power}")
-        # print(f"to power = {other.power}")
+        scaled_stats = [
+            linear_scale_stats(stat_dict[part], self.power, other.power)
+            for part in self.scheme.ids
+        ]
 
-        for i in range(len(self.stats)):
-            print(self.power, other.power)
-            self.stats[i] = linear_scale_stats(self.stats[i], self.power,
-                                               other.power)
-
-        # I don't think setting the power will do anything, but maybe if
-        # boss scaling or some other boss scaling option comes in we'll want
-        # to know the "real" power of the boss.
-        self.power = other.power
+        return scaled_stats
 
 
 class LinearNoHPScaleBoss(LinearScaleBoss):
 
     # Scale like a linear boss, but then reset the hps to default
-    def scale_relative_to(self, other: Boss):
-        part_hps = [x.hp for x in self.stats]
-        LinearScaleBoss.scale_relative_to(self, other)
+    def scale_relative_to(
+            self, other: Boss,
+            stat_dict: dict[EnemyID, EnemyStats]
+    ) -> list[EnemyStats]:
+        part_hps = [
+            x.hp
+            for x in [stat_dict[part] for part in self.scheme.ids]
+        ]
+        print(part_hps)
+        input()
+
+        scaled_stats = \
+            LinearScaleBoss.scale_relative_to(self, other, stat_dict)
 
         # reset the hps
-        for i in range(len(self.ids)):
-            self.stats[i].hp = part_hps[i]
+        for i in range(len(scaled_stats)):
+            scaled_stats[i].hp = part_hps[i]
+
+        return scaled_stats

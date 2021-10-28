@@ -1117,7 +1117,7 @@ class RandoConfig:
             LocID.ZENAN_BRIDGE: BossID.ZOMBOR
         }
 
-        self.boss_data_dict = get_boss_data_dict(rom)
+        self.boss_data_dict = get_boss_data_dict()
         self.boss_rank = dict()
         self.enemy_dict = enemystats.get_stat_dict(rom)
         self.shop_manager = ShopManager(rom)

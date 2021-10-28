@@ -9,7 +9,7 @@ from freespace import FSWriteType
 import random
 
 # from ctdecompress import compress, decompress, get_compressed_length
-from bossdata import Boss, LinearScaleBoss, LinearNoHPScaleBoss, \
+from bossdata import Boss, BossScheme, LinearScaleBoss, LinearNoHPScaleBoss, \
     get_default_boss_assignment
 from ctenums import LocID, BossID, EnemyID
 from enemystats import EnemyStats
@@ -23,17 +23,6 @@ from mapmangler import LocExits, duplicate_heckran_map, duplicate_location_data
 
 import randosettings as rset
 import randoconfig as cfg
-
-
-class BossLocation:
-
-    def __init__(self,
-                 loc_id: int,
-                 orig_boss: Boss,
-                 set_boss: Callable[[FS, Boss], None]):
-        self.loc_id = loc_id
-        self.orig_boss = orig_boss
-        self.set_boss = set_boss
 
 
 def no_scale(stat: int, from_power: int, to_power: int):
@@ -85,7 +74,7 @@ def linear_scale_fn(stats: EnemyStats, from_power: int,
     return ret
 
 
-def set_manoria_boss(ctrom: CTRom, boss: Boss):
+def set_manoria_boss(ctrom: CTRom, boss: BossScheme):
     # 0xC6 is Yakra's map - Manoria Command
     loc_id = 0xC6
 
@@ -97,7 +86,7 @@ def set_manoria_boss(ctrom: CTRom, boss: Boss):
                               first_x, first_y)
 
 
-def set_denadoro_boss(ctrom: CTRom, boss: Boss):
+def set_denadoro_boss(ctrom: CTRom, boss: BossScheme):
     # 0x97 is M&M's map - Cave of the Masamune
     loc_id = 0x97
     boss_obj = 0x14
@@ -109,7 +98,7 @@ def set_denadoro_boss(ctrom: CTRom, boss: Boss):
                               first_x, first_y)
 
 
-def set_reptite_lair_boss(ctrom: CTRom, boss: Boss):
+def set_reptite_lair_boss(ctrom: CTRom, boss: BossScheme):
     # 0x121 is Nizbel's map - Reptite Lair Azala's Room
     loc_id = 0x121
     boss_obj = 0x9
@@ -121,7 +110,7 @@ def set_reptite_lair_boss(ctrom: CTRom, boss: Boss):
                               first_x, first_y)
 
 
-def set_magus_castle_flea_spot_boss(ctrom: CTRom, boss: Boss):
+def set_magus_castle_flea_spot_boss(ctrom: CTRom, boss: BossScheme):
     # 0xAD is Flea's map - Castle Magus Throne of Magic
     loc_id = 0xAD
 
@@ -148,7 +137,7 @@ def set_magus_castle_flea_spot_boss(ctrom: CTRom, boss: Boss):
 # End set_magus_castle_flea_spot_boss
 
 
-def set_magus_castle_slash_spot_boss(ctrom: CTRom, boss: Boss):
+def set_magus_castle_slash_spot_boss(ctrom: CTRom, boss: BossScheme):
     # 0xA9 is Slash's map - Castle Magus Throne of Strength
     loc_id = 0xA9
     script = ctrom.script_manager.get_script(loc_id)
@@ -188,7 +177,7 @@ def set_magus_castle_slash_spot_boss(ctrom: CTRom, boss: Boss):
 # End set_magus_castle_slash_spot_boss
 
 
-def set_giants_claw_boss(ctrom: CTRom, boss: Boss):
+def set_giants_claw_boss(ctrom: CTRom, boss: BossScheme):
     # 0xC5 is the Rust Tyrano's map - Giant's Claw Last Tyrano
     loc_id = 0xC5
 
@@ -204,7 +193,7 @@ def set_giants_claw_boss(ctrom: CTRom, boss: Boss):
 # end set giant's claw boss
 
 
-def set_tyrano_lair_midboss(ctrom: CTRom, boss: Boss):
+def set_tyrano_lair_midboss(ctrom: CTRom, boss: BossScheme):
     # 0x130 is the Nizbel II's map - Tyrano Lair Nizbel's Room
     loc_id = 0x130
     boss_obj = 0x8
@@ -217,7 +206,7 @@ def set_tyrano_lair_midboss(ctrom: CTRom, boss: Boss):
 # end set_tyrano_lair_midboss
 
 
-def set_zeal_palace_boss(ctrom: CTRom, boss: Boss):
+def set_zeal_palace_boss(ctrom: CTRom, boss: BossScheme):
     # 0x14E is the Golem's map - Zeal Palace's Throneroom (Night)
     # Note this is different from vanilla, where it's 0x14C
     loc_id = 0x14E
@@ -270,7 +259,7 @@ def set_zeal_palace_boss(ctrom: CTRom, boss: Boss):
 #     Possibly it's easier to delete all but one object and then
 #   - For a 3+ spot boss, do the 2-spot procedure and then add new objects
 #     that pop into existence right
-def set_zenan_bridge_boss(ctrom: CTRom, boss: Boss):
+def set_zenan_bridge_boss(ctrom: CTRom, boss: BossScheme):
     # 0x87 is Zombor's map - Zenan Bridge (Middle Ages)
     loc_id = 0x87
     script = ctrom.script_manager.get_script(loc_id)
@@ -355,7 +344,7 @@ def set_zenan_bridge_boss(ctrom: CTRom, boss: Boss):
     # end multi-part
 
 
-def set_death_peak_boss(ctrom: CTRom, boss: Boss):
+def set_death_peak_boss(ctrom: CTRom, boss: BossScheme):
     # 0x1EF is the Lavos Spawn's map - Death Peak Guardian Spawn
     loc_id = 0x1EF
     script = ctrom.script_manager.get_script(loc_id)
@@ -412,7 +401,7 @@ def set_death_peak_boss(ctrom: CTRom, boss: Boss):
     script.insert_commands(calls, pos)
 
 
-def set_giga_mutant_spot_boss(ctrom: CTRom, boss: Boss):
+def set_giga_mutant_spot_boss(ctrom: CTRom, boss: BossScheme):
     # 0x143 is the Giga Mutant's map - Black Omen 63F Divine Guardian
     loc_id = 0x143
     script = ctrom.script_manager.get_script(loc_id)
@@ -484,7 +473,7 @@ def set_giga_mutant_spot_boss(ctrom: CTRom, boss: Boss):
     script.data[pos + len(calls) - len(ins_cmd)] = 0x4  # Call w/ halt
 
 
-def set_terra_mutant_spot_boss(ctrom: CTRom, boss: Boss):
+def set_terra_mutant_spot_boss(ctrom: CTRom, boss: BossScheme):
     # 0x145 is the Terra Mutant's map - Black Omen 98F Astral Guardian
     loc_id = 0x145
     script = ctrom.script_manager.get_script(loc_id)
@@ -547,7 +536,7 @@ def set_terra_mutant_spot_boss(ctrom: CTRom, boss: Boss):
     script.insert_commands(calls, pos)
 
 
-def set_elder_spawn_spot_boss(ctrom: CTRom, boss: Boss):
+def set_elder_spawn_spot_boss(ctrom: CTRom, boss: BossScheme):
     # 0x60 is the Elder Spawn's map - Black Omen 98F Astral Progeny
     loc_id = 0x60
     script = ctrom.script_manager.get_script(loc_id)
@@ -605,7 +594,7 @@ def set_elder_spawn_spot_boss(ctrom: CTRom, boss: Boss):
     script.insert_commands(calls, pos)
 
 
-def set_heckrans_cave_boss(ctrom: CTRom, boss: Boss):
+def set_heckrans_cave_boss(ctrom: CTRom, boss: BossScheme):
 
     # Heckran is in 0xC0 now.
     loc_id = 0xC0
@@ -618,7 +607,7 @@ def set_heckrans_cave_boss(ctrom: CTRom, boss: Boss):
                               first_x, first_y)
 
 
-def set_kings_trial_boss(ctrom: CTRom, boss: Boss):
+def set_kings_trial_boss(ctrom: CTRom, boss: BossScheme):
     # Yakra XIII is in 0xC1 now.
     loc_id = 0xC1
     boss_obj = 0xB
@@ -630,7 +619,7 @@ def set_kings_trial_boss(ctrom: CTRom, boss: Boss):
                               first_x, first_y)
 
 
-def set_ozzies_fort_flea_plus_spot_boss(ctrom: CTRom, boss: Boss):
+def set_ozzies_fort_flea_plus_spot_boss(ctrom: CTRom, boss: BossScheme):
     loc_id = 0xB7
     boss_obj = 0x9
     first_x, first_y = 0x270, 0x250
@@ -643,7 +632,7 @@ def set_ozzies_fort_flea_plus_spot_boss(ctrom: CTRom, boss: Boss):
                               False, first_x, first_y)
 
 
-def set_ozzies_fort_super_slash_spot_boss(ctrom: CTRom, boss: Boss):
+def set_ozzies_fort_super_slash_spot_boss(ctrom: CTRom, boss: BossScheme):
     loc_id = 0xB8
     script = ctrom.script_manager.get_script(loc_id)
 
@@ -658,7 +647,7 @@ def set_ozzies_fort_super_slash_spot_boss(ctrom: CTRom, boss: Boss):
                               False, first_x, first_y)
 
 
-def set_sun_palace_boss(ctrom: CTRom, boss: Boss):
+def set_sun_palace_boss(ctrom: CTRom, boss: BossScheme):
     # 0xFB is Son of Sun's map - Sun Palace
     loc_id = 0xFB
     script = ctrom.script_manager.get_script(loc_id)
@@ -733,7 +722,7 @@ def set_sun_palace_boss(ctrom: CTRom, boss: Boss):
     script.insert_commands(calls, pos)
 
 
-def set_desert_boss(ctrom: CTRom, boss: Boss):
+def set_desert_boss(ctrom: CTRom, boss: BossScheme):
     # 0xA1 is Retinite's map - Sunken Desert Devourer
     loc_id = 0xA1
     script = ctrom.script_manager.get_script(loc_id)
@@ -799,7 +788,7 @@ def set_desert_boss(ctrom: CTRom, boss: Boss):
     script.insert_commands(calls, pos)
 
 
-def set_twin_golem_spot(ctrom: CTRom, boss: Boss):
+def set_twin_golem_spot(ctrom: CTRom, boss: BossScheme):
     # This one is unique because it actually depends on the size of the boss.
     # One spot bosses will be duplicated and others will just appear as-is.
 
@@ -889,7 +878,7 @@ def set_twin_golem_spot(ctrom: CTRom, boss: Boss):
 #     first_y: The same as first_x but for the y_coordinate
 #    is_shown: Should the boss be shown by default.  Usually this is False.
 def set_generic_one_spot_boss(ctrom: CTRom,
-                              boss: Boss,
+                              boss: BossScheme,
                               loc_id: int,
                               boss_obj: int,
                               show_pos_fn: Callable[[Event], int],
@@ -908,7 +897,7 @@ def set_generic_one_spot_boss(ctrom: CTRom,
 # This is needed in some cases when there is preprocessing required before
 # Following the general procedure.
 def set_generic_one_spot_boss_script(script: Event,
-                                     boss: Boss,
+                                     boss: BossScheme,
                                      boss_obj: int,
                                      show_pos_fn: Callable[[Event], int],
                                      first_x: int = None,
@@ -991,7 +980,7 @@ def set_object_coordinates(script: Event, obj_id: int, x: int, y: int,
 
 
 # Make a barebones object to make a boss part and hide it.
-def append_boss_object(script: Event, boss: Boss, part_index: int,
+def append_boss_object(script: Event, boss: BossScheme, part_index: int,
                        first_x: int, first_y: int,
                        is_shown: bool = False) -> int:
 
@@ -1201,140 +1190,6 @@ def write_assignment_to_config(settings: rset.Settings,
             config.boss_assign_dict[locations[i]] = bosses[i]
 
 
-# Default randomization: Just shuffle 1, 2 part spots
-def randomize_bosses(fsrom: FS):
-
-    # Duplicate maps to avoid sprite limits
-    duplicate_maps(fsrom)
-
-    # set up the boss pool
-    # Note that this is reading stats from the rom, so if scaling has been
-    # applied (hard mode or boss scaling) we pick that up here.
-
-    Default = LinearScaleBoss
-    rom = fsrom.getbuffer()
-
-    yakra = Default.YAKRA(rom)
-    masamune = Default.MASA_MUNE(rom)
-    nizbel = Default.NIZBEL(rom)
-    flea = Default.FLEA(rom)
-    slash = Default.SLASH_SWORD(rom)
-    rust_tyrano = Default.RUST_TYRANO(rom)
-    nizbel_ii = Default.NIZBEL_II(rom)
-    zombor = Default.ZOMBOR(rom)
-    golem = Default.GOLEM(rom)
-    golem_boss = Default.GOLEM_BOSS(rom)
-    twin_golem = Default.TWIN_GOLEM(rom)
-    lavos_spawn = Default.LAVOS_SPAWN(rom)
-    giga_mutant = Default.GIGA_MUTANT(rom)
-    terra_mutant = Default.TERRA_MUTANT(rom)
-    heckran = Default.HECKRAN(rom)
-    yakra_xiii = Default.YAKRA_XIII(rom)
-    elder_spawn = Default.ELDER_SPAWN(rom)
-    flea_plus = Default.FLEA_PLUS(rom)
-    super_slash = Default.SUPER_SLASH(rom)
-    dalton_plus = Default.DALTON_PLUS(rom)
-    atropos_xr = Default.ATROPOS_XR(rom)
-
-    # not in the pool....yet
-    son_of_sun = LinearNoHPScaleBoss.SON_OF_SUN(rom)
-    retinite = Default.RETINITE(rom)
-
-    del(rom)
-
-    # Twin golem is in a weird place.  Currently it's considered a one spot
-    # boss even though it's a two-spot boss in the current iteration.  This
-    # is a holdover from early versions of boss randomizer.
-    one_spot_boss = [  # yakra,
-        masamune, nizbel, flea, slash, rust_tyrano,
-        nizbel_ii, golem, twin_golem, heckran,   # yakra_xiii,
-        flea_plus, super_slash, dalton_plus, atropos_xr,
-        golem_boss]
-
-    two_spot_boss = [zombor, lavos_spawn, giga_mutant, terra_mutant,
-                     elder_spawn]
-
-    multi_spot_boss = [son_of_sun, retinite]
-
-    # set up a list of locations to shuffle
-    # single spot
-    cathedral = BossLocation(LocID.MANORIA_COMMAND, yakra,
-                             set_manoria_boss)
-    denadoro = BossLocation(LocID.CAVE_OF_MASAMUNE, masamune,
-                            set_denadoro_boss)
-    reptite = BossLocation(LocID.REPTITE_LAIR_AZALA_ROOM, nizbel,
-                           set_reptite_lair_boss)
-    magus_flea = BossLocation(LocID.MAGUS_CASTLE_FLEA, flea,
-                              set_magus_castle_flea_spot_boss)
-    magus_slash = BossLocation(LocID.MAGUS_CASTLE_SLASH, slash,
-                               set_magus_castle_slash_spot_boss)
-    giants_claw = BossLocation(LocID.GIANTS_CLAW_TYRANO, rust_tyrano,
-                               set_giants_claw_boss)
-    tyrano_midboss = BossLocation(LocID.TYRANO_LAIR_NIZBEL, nizbel_ii,
-                                  set_tyrano_lair_midboss)
-    zeal_palace = BossLocation(LocID.ZEAL_PALACE_THRONE_NIGHT, golem,
-                               set_zeal_palace_boss)
-    heckran_cave = BossLocation(LocID.HECKRAN_CAVE_NEW, heckran,
-                                set_heckrans_cave_boss)
-    kings_trial = BossLocation(LocID.KINGS_TRIAL_NEW, yakra_xiii,
-                               set_kings_trial_boss)
-    ocean_palace = BossLocation(LocID.OCEAN_PALACE_TWIN_GOLEM, twin_golem,
-                                set_twin_golem_spot)
-
-    # two spot
-    zenan_bridge = BossLocation(LocID.ZENAN_BRIDGE, zombor,
-                                set_zenan_bridge_boss)
-    death_peak = BossLocation(LocID.DEATH_PEAK_GUARDIAN_SPAWN, lavos_spawn,
-                              set_death_peak_boss)
-    omen_giga = BossLocation(LocID.BLACK_OMEN_GIGA_MUTANT, giga_mutant,
-                             set_giga_mutant_spot_boss)
-    omen_terra = BossLocation(LocID.BLACK_OMEN_TERRA_MUTANT, terra_mutant,
-                              set_terra_mutant_spot_boss)
-    omen_elder = BossLocation(LocID.BLACK_OMEN_ELDER_SPAWN, elder_spawn,
-                              set_elder_spawn_spot_boss)
-
-    # not in the pool....yet
-    sun_palace = BossLocation(LocID.SUN_PALACE, son_of_sun,
-                              set_sun_palace_boss)
-    sunken_desert = BossLocation(LocID.SUNKEN_DESERT_DEVOURER, retinite,
-                                 set_desert_boss)
-
-    one_spot_pool = [cathedral, denadoro, reptite, magus_flea, magus_slash,
-                     giants_claw, tyrano_midboss, zeal_palace, heckran_cave,
-                     kings_trial, ocean_palace]
-
-    two_spot_pool = [zenan_bridge, death_peak, omen_giga, omen_terra,
-                     omen_elder]
-
-    multi_spot_pool = [sun_palace, sunken_desert]
-
-    boss_pool = one_spot_boss + two_spot_boss + multi_spot_boss
-    spot_pool = one_spot_pool + two_spot_pool + multi_spot_pool
-
-    # Shuffle the eligible bosses.  Assign the first N to the spots
-    random.seed(58203740)
-    random.shuffle(boss_pool)
-
-    # spot_pool = [sun_palace]
-    # boss_pool = [elder_spawn]
-
-    # The payoff for all the annoying stuff is that the actual randomization
-    # loop is very easy.
-    for i in range(len(spot_pool)):
-        boss = boss_pool[i]
-        boss.scale_relative_to(spot_pool[i].orig_boss)
-
-        for x in boss.stats:
-            x.can_sightscope = True
-
-        boss.write_to_fsrom(fsrom)
-        spot_pool[i].set_boss(fsrom, boss)
-
-    for i in range(len(spot_pool)):
-        print(f"{spot_pool[i].loc_id!r} has {boss_pool[i].ids}")
-        print(boss_pool[i])
-
-
 # Scale the bosses given (the game settings) and the current assignment of
 # the bosses.  This is to be differentiated from the boss scaling flag which
 # scales based on the key item assignment.
@@ -1347,37 +1202,30 @@ def scale_bosses_given_assignment(settings: rset.Settings,
 
     # dictionaries: BossID --> Boss data
     orig_data = config.boss_data_dict
-    scaled_data = {
-        key: copy.deepcopy(orig_data[key]) for key in orig_data.keys()
-    }
+
+    # We want to avoid a potential chain of assignments such as:
+    #    A is scaled relative to B
+    #    C is scaled relative to A
+    # In the second scaling we want to scale relative to A's original stats,
+    # not the stats that arose from the first scaling.
+
+    # So here's a dict to store the scaled stats before writing them back
+    # to the config at the very end.
+    scaled_dict = dict()
 
     for location in settings.ro_settings.loc_list:
-        orig_boss = default_assignment[location]
-        new_boss = current_assignment[location]
+        orig_boss = orig_data[default_assignment[location]]
+        new_boss = orig_data[current_assignment[location]]
 
-        scaled_boss = scaled_data[new_boss]
-        orig_boss = orig_data[orig_boss]
-        scaled_boss.scale_relative_to(orig_boss)
+        scaled_stats = new_boss.scale_relative_to(orig_boss,
+                                                  config.enemy_dict)
+        # Put the stats in scaled_dict
+        for ind, part_id in enumerate(new_boss.scheme.ids):
+            scaled_dict[part_id] = scaled_stats[ind]
 
-        # print(f"BossID: {new_boss}")
-        # print(f"Original:\n{orig_data[new_boss]}")
-        # print(f"Scaled:\n{scaled_data[new_boss]}")
-        # input()
-
-        # There's an issue right now because boss stats are duplicated.
-        # One copy is in the boss data and one copy is in the enemystats
-        # dict.
-
-        # Write back from boss_data to enemy_dict because it's the enemy_dict
-        # that gets written back to the rom in the end.
-        altered_ids = set(scaled_boss.ids)
-        for enemy_id in altered_ids:
-            index = scaled_boss.ids.index(enemy_id)
-            stats = replace(scaled_boss.stats[index])
-            config.enemy_dict[enemy_id] = stats
-
-    # replace the original dict with the scaled boss dict
-    config.boss_data_dict = scaled_data
+    # Write all of the scaled stats back to config's dict
+    for enemy_id in scaled_dict.keys():
+        config.enemy_dict[enemy_id] = scaled_dict[enemy_id]
 
 
 def write_bosses_to_ctrom(ctrom: CTRom, settings: rset.Settings,
@@ -1428,87 +1276,15 @@ def write_bosses_to_ctrom(ctrom: CTRom, settings: rset.Settings,
             else:
                 assign_fn = assign_fn_dict[loc]
                 boss_id = current_assignment[loc]
-                boss = config.boss_data_dict[boss_id]
+                boss_scheme = config.boss_data_dict[boss_id].scheme
                 print(f"Writing {boss_id} to {loc}")
-                print(f"{boss}")
-                assign_fn(ctrom, boss)
+                print(f"{boss_scheme}")
+                assign_fn(ctrom, boss_scheme)
 
 
 def main():
-    with open('./roms/jets_test.sfc', 'rb') as infile:
-        rom = bytearray(infile.read())
+    pass
 
-    settings = rset.Settings.get_race_presets()
-    settings.ro_settings.preserve_parts = True
-    config = cfg.RandoConfig(rom)
 
-    ctrom = CTRom(rom, True)
-    fs = ctrom.rom_data.space_manager
-    fs.mark_block((0x41107C, 0x4F0000), FSWriteType.MARK_FREE)
-    fs.mark_block((0x4F2100, 0x5B8000), FSWriteType.MARK_FREE)
-    fs.mark_block((0x5B80C8, 0x5DBB68), FSWriteType.MARK_FREE)
-    fs.mark_block((0x5DBB85, 0x5F0000), FSWriteType.MARK_FREE)
-
-    # print(config.boss_assign_dict)
-    for key, item in config.boss_assign_dict.items():
-        print(f"{key} --> {item}")
-
-    print("NEW:")
-    write_config(settings, config)
-    config.boss_assign_dict[LocID.BLACK_OMEN_GIGA_MUTANT] = \
-        BossID.LAVOS_SPAWN
-    for key, item in config.boss_assign_dict.items():
-        print(f"{key} --> {item}")
-
-    scale_bosses_given_assignment(settings, config)
-    assign_bosses(ctrom, settings, config)
-
-    ctrom.write_all_scripts_to_rom()
-    for enemy_id, stats in config.enemy_dict.items():
-        stats.can_sightscope = True
-        stats.write_to_stream(ctrom.rom_data, enemy_id)
-
-    config.write_spoiler_log('spoiler-log.txt')
-
-    with open('./roms/jets_test_out.sfc', 'wb') as outfile:
-        ctrom.rom_data.seek(0)
-        outfile.write(ctrom.rom_data.read())
-
-    quit()
-    
-
-    # This is roughly what's true after the randomizer does its business
-    fs = FS(rom, False)
-    fs.mark_block((0x41107C, 0x4F0000), True)
-    fs.mark_block((0x4F2100, 0x5B8000), True)
-    fs.mark_block((0x5B80C8, 0x5DBB68), True)
-    fs.mark_block((0x5DBB85, 0x5F0000), True)
-
-    randomize_bosses(fs)
-
-    # duplicate_maps(fs)
-
-    # set_manoria_boss(fs, Boss.YAKRA(rom))
-    # set_denadoro_boss(fs, Boss.YAKRA(rom))
-    # set_reptite_lair_boss(fs, Boss.ZOMBOR(rom))
-    # set_magus_castle_flea_spot_boss(fs, Boss.ZOMBOR(rom))
-    # set_magus_castle_slash_spot_boss(fs, Boss.SON_OF_SUN(rom))
-    # set_giants_claw_boss(fs, Boss.RETINITE(rom))
-    # set_tyrano_lair_midboss(fs, Boss.RETINITE(rom))
-    # set_zeal_palace_boss(fs, Boss.MEGA_MUTANT(rom))
-    # set_zenan_bridge_boss(fs, Boss.RETINITE(rom))
-    # set_death_peak_boss(fs, Boss.SON_OF_SUN(rom))
-    # set_giga_mutant_spot_boss(fs, Boss.ZOMBOR(rom))
-    # set_terra_mutant_spot_boss(fs, Boss.RETINITE(rom))
-    # set_elder_spawn_spot_boss(fs, Boss.FLEA(rom))
-
-    # set_heckrans_cave_boss(fs, Boss.RETINITE(rom))
-    # set_kings_trial_boss(fs, Boss.ELDER_SPAWN(rom))
-    # set_twin_golem_spot(fs, Boss.ELDER_SPAWN(rom))
-
-    with open('jets_test_out.sfc', 'wb') as outfile:
-        outfile.write(fs.getbuffer())
-        
 if __name__ == '__main__':
     main()
-    

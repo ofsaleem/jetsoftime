@@ -230,7 +230,7 @@ def set_boss_power(settings: rset.Settings, config: cfg.RandoConfig):
     for boss in boss_rank.keys():
         print(f"{boss} has rank {boss_rank[boss]}")
         boss_data = config.boss_data_dict[boss]
-        part_ids = list(set(boss_data.ids))
+        part_ids = list(set(boss_data.scheme.ids))
         rank = boss_rank[boss]
 
         for part in part_ids:
