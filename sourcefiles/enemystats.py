@@ -36,14 +36,13 @@ class EnemyStats:
         stat_string = ' '.join(x for x in stats)
         ret += (f"Name: {self.name}\n"
                 f"HP = {self.hp}\tLevel = {self.level}\n"
-                f"XP = {self.xp}\tTP = {self.tp}\tGP={self.gp}\n"
+                f"XP = {self.xp}\tTP = {self.tp}\tGP = {self.gp}\n"
                 "Spd Off Def Mag Mdf\n" +
                 stat_string + '\n'
                 f"Drop = {self.drop_item}\n"
                 f"Charm = {self.charm_item}")
 
         return ret
-                
 
     # bossscaler.py uses lists of stats to do the scaling.  This method takes
     # one of those lists and replaces the relevant stats in the class.

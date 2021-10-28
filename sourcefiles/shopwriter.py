@@ -20,19 +20,19 @@ import randosettings as rset
 # There's no reason for these to be in treasurewriter.  Maybe a method
 # in the enum?
 low_lvl_items = tw.low_lvl_items
-low_lvl_consumables = tw.low_lvl_consumables
+low_lvl_consumables = tw.low_lvl_consumables[:]
 low_lvl_consumables.remove(ItemID.POWER_MEAL)
 
 passable_lvl_items = tw.passable_lvl_items
 passable_lvl_consumables = tw.passable_lvl_consumables
 mid_lvl_items = tw.mid_lvl_items
 mid_lvl_consumables = tw.mid_lvl_consumables
-good_lvl_items = tw.good_lvl_items
+good_lvl_items = tw.good_lvl_items[:]
 good_lvl_items.remove(ItemID.GREENDREAM)
 
 good_lvl_consumables = tw.good_lvl_consumables
 high_lvl_items = tw.high_lvl_items
-high_lvl_consumables = tw.high_lvl_consumables
+high_lvl_consumables = tw.high_lvl_consumables[:]
 
 for x in [ItemID.POWER_TAB, ItemID.MAGIC_TAB, ItemID.SPEED_TAB]:
     high_lvl_consumables.remove(x)

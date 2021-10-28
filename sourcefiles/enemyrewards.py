@@ -107,6 +107,8 @@ def get_distributions(enemy_group: RewardGroup,
                 (8, (tw.mid_lvl_consumables + tw.good_lvl_consumables +
                      tw.high_lvl_consumables + tw.awesome_lvl_consumables))
             )
+            charm_dist = drop_dist
+            drop_rate = 0.3
         else:
             exit()
     elif enemy_group == RewardGroup.EARLY_BOSS:

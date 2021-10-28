@@ -94,7 +94,7 @@ class Randomizer:
 
         # Enemy rewards
         enemyrewards.write_enemy_rewards_to_config(self.settings, self.config)
-        
+
         # Key item config.  Important that this goes after treasures because
         # otherwise the treasurewriter can overwrite key items placed by
         # Chronosanity
@@ -112,9 +112,6 @@ class Randomizer:
 
         # Boss scaling (done after boss rando)
         bossscaler.set_boss_power(self.settings, self.config)
-        print(self.config.enemy_dict[ctenums.EnemyID.DALTON_PLUS].drop_item)
-        input()
-
 
     def write_spoiler_log(self, filename):
         with open(filename, 'w') as outfile:
@@ -123,6 +120,7 @@ class Randomizer:
             self.write_boss_rando_spoilers(outfile)
             self.write_boss_stat_spoilers(outfile)
             self.write_treasure_spoilers(outfile)
+            self.write_drop_charm_spoilers(outfile)
             self.write_shop_spoilers(outfile)
             self.write_price_spoilers(outfile)
 
@@ -256,6 +254,42 @@ class Randomizer:
                 part_str = '\t' + str.replace(part_str, '\n', '\n\t')
                 file_object.write(part_str+'\n')
             file_object.write('\n')
+
+    def write_drop_charm_spoilers(self, file_object):
+        file_object.write("Enemy Drop and Charm\n")
+        file_object.write("--------------------\n")
+
+        tiers = [enemyrewards.common_enemies,
+                 enemyrewards.uncommon_enemies,
+                 enemyrewards.rare_enemies,
+                 enemyrewards.rarest_enemies,
+                 enemyrewards.early_bosses + enemyrewards.midgame_bosses +
+                 enemyrewards.late_bosses]
+
+        labels = ['Common Enemies',
+                  'Uncommon Enemies',
+                  'Rare Enemies',
+                  'Rarest Enemies',
+                  'Bosses']
+
+        ids = [x for tier in tiers for x in tier]
+        width = max(len(str(x)) for x in ids) + 8
+
+        for ind, tier in enumerate(tiers):
+            file_object.write(labels[ind] + '\n')
+            for enemy_id in tier:
+                file_object.write(
+                    '\t'+
+                    str.ljust(f"{enemy_id}", width) +
+                    " Drop: "
+                    f"{self.config.enemy_dict[enemy_id].drop_item}\n")
+                file_object.write(
+                    '\t'+
+                    str.ljust("", width) +
+                    "Charm: "
+                    f"{self.config.enemy_dict[enemy_id].charm_item}\n")
+
+        file_object.write('\n')
 
     def randomize(self):
 
