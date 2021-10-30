@@ -764,9 +764,6 @@ class ChronosanityLostWorldsGameConfig(GameConfig):
             .addLocation(Location(TID.LAB_16_3))
             .addLocation(Location(TID.LAB_16_4))
             .addLocation(Location(TID.LAB_32_1))
-            # 1000AD, opened after trial - putting it here to dilute the
-            # lab pool a bit.
-            .addLocation(Location(TID.PRISON_TOWER_1000))
             # Race log chest is not included.
             # .addLocation(Location(TID.LAB_32_RACE_LOG))
         )
