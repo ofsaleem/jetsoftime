@@ -469,7 +469,10 @@ class ChronosanityGameConfig(GameConfig):
             .addLocation(Location(TID.HECKRAN_SEALED_2))
             # Since the blue pyramid only lets you get one of the two chests,
             # set the key item to be in both of them.
-            .addLocation(LinkedLocation(TID.PYRAMID_LEFT, TID.PYRAMID_RIGHT))
+            .addLocation(
+                LinkedLocation(Location(TID.PYRAMID_LEFT),
+                               Location(TID.PYRAMID_RIGHT))
+            )
         )
 
         # Sealed chest in the magic cave.
