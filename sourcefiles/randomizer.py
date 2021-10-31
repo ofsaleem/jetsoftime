@@ -23,6 +23,7 @@ import tabchange as tabwriter
 import fastmagic
 import charrando
 import roboribbon
+import sightscope
 
 def read_names():
         p = open("names.txt","r")
@@ -54,6 +55,7 @@ tab_treasures = ""
 boss_rando = ""
 shop_prices = ""
 duplicate_chars = ""
+sightscope_input = ""
 #
 # Handle the command line interface for the randomizer.
 #   
@@ -82,6 +84,7 @@ def command_line():
      global duplicate_chars
      global same_char_techs
      global char_choices
+     global sightscope_input
      
      flags = ""
      sourcefile = input("Please enter ROM name or drag it onto the screen.")
@@ -191,7 +194,10 @@ def command_line():
         flags = flags + "spr"
      else:
         shop_prices = "Normal"
-    
+     sightscope_input = input("Do you want enemy health to always be visible (perma-SightScope)?")
+     sightscope_input = sightscope_input.upper()
+     if sightscope_input == "Y":
+        flags = flags + "sc"
 
 #
 # Given a tk IntVar, convert it to a Y/N value for use by the randomizer.
@@ -231,7 +237,8 @@ def handle_gui(datastore):
   global duplicate_chars
   global same_char_techs
   global char_choices
-  
+  global sightscope_input
+
   # Get the user's chosen difficulty
   difficulty = datastore.difficulty.get()
 
@@ -273,6 +280,7 @@ def handle_gui(datastore):
   chronosanity = get_flag_value(datastore.flags['cr'])
   tab_treasures = get_flag_value(datastore.flags['tb'])
   duplicate_chars = get_flag_value(datastore.flags['dc'])
+  sightscope_input = get_flag_value(datastore.flags['sc'])
 
   # dc settings
   if datastore.char_choices is None:
@@ -333,7 +341,8 @@ def generate_rom():
      global duplicate_chars
      global same_char_techs
      global char_choices
-     
+     global sightscope_input
+
      # isolate the ROM file name
      inputPath = pathlib.Path(sourcefile)
      outfile = inputPath.name
@@ -391,6 +400,8 @@ def generate_rom():
      if difficulty == "hard":
          bigpatches.write_patch_alt("patches/hard.ips",outfile)
      tabwriter.rewrite_tabs(outfile)#Psuedoarc's code to rewrite Power and Magic tabs and make them more impactful
+     if sightscope_input == "Y":
+         sightscope.sightscope_file(outfile)
      roboribbon.robo_ribbon_speed_file(outfile)
      print("Randomizing treasures...")
      treasures.randomize_treasures(outfile,difficulty,tab_treasures)
