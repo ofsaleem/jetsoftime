@@ -275,6 +275,7 @@ def presetNew():
     datastore.flags['z'].set(1)
     datastore.flags['p'].set(1)
     datastore.flags['m'].set(1)
+    datastore.flags['sc'].set(1)
     datastore.techRando.set("Fully Random")
 
 def presetLost():
@@ -352,7 +353,15 @@ def getGameOptionsFrame(window):
   checkButton.grid(row=row, column=2, sticky=tk.W, columnspan=2)
   CreateToolTip(checkButton, "Music is disabled.  Sound effects will still play.")
   row = row + 1
-  
+
+  # Always see enemy health (perma-SightScope)
+  var = tk.IntVar()
+  datastore.flags['sc'] = var
+  checkButton = tk.Checkbutton(frame, text="SightScope mode (sc)", variable = var)
+  checkButton.grid(row=row, column=2, sticky=tk.W, columnspan=2)
+  CreateToolTip(checkButton, "Enemy health is always visible.")
+  row = row + 1
+
   return frame
   
 
