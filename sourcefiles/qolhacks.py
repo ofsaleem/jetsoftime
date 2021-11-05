@@ -13,10 +13,15 @@ def force_sightscope_on(ctrom: CTRom, settings: rset.Settings):
         # overwriting the BEQ (branch-if-equal) to BRA (branch-always)
         ctrom.rom_data.write(0x80)
 
+# After writing additional hacks, put them here. Based on the settings, they
+# will or will not modify the ROM.
+def attempt_all_qol_hacks(ctrom: CTRom, settings: rset.Settings):
+    force_sightscope_on(ctrom, settings)
+
 # Testing
 if __name__ == "__main__":
     ctrom = CTRom.from_file("test1.sfc")
     settings = rset.Settings.get_new_player_presets()
-    force_sightscope_on(ctrom, settings)
+    attempt_all_qol_hacks(ctrom, settings)
 
 
